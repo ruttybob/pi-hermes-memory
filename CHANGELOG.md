@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Skills storage path changed from `~/.pi/agent/memory/skills/` to `<cwd>/.pi/skills/` — skills are now project-scoped
 - Renamed project from `pi-hermes-memory` to `pi-self-memory` across all files (package.json, docs, config, tests)
 
+### Removed
+
+- Дублирование `<available-memory-tools>` в системном промпте — Pi сам рендерит описание зарегистрированных инструментов
+
 ## [0.8.1] - 2026-05-14
 
 ### Changed

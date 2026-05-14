@@ -28,7 +28,7 @@ describe("buildPromptContext", () => {
     assert.strictEqual(result, MEMORY_POLICY_PROMPT);
     assert.match(result, /Memory write targets/);
     assert.match(result, /Accepted memory categories/);
-    assert.match(result, /skill: list, view, create, patch, edit, and delete procedural skills/);
+    assert.doesNotMatch(result, /<available-memory-tools>/);
     assert.doesNotMatch(result, /MEMORY<\/memory-context>/);
     assert.doesNotMatch(result, /PROJECT demo/);
     assert.doesNotMatch(result, /SKILLS/);
