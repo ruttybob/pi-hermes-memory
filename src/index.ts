@@ -72,6 +72,15 @@ export default function (pi: ExtensionAPI) {
     const promptContext = await buildPromptContext(config, store, projectStore, skillStore, projectName);
 
     if (promptContext) {
+      // Report injection for look-system-prompt and similar viewers
+      pi.events?.emit("system-prompt:injection", {
+        source: "pi-self-memory",
+        label: "Memory Policy + Entries",
+        charCount: promptContext.length,
+        preview: promptContext.slice(0, 300),
+        fullContent: promptContext,
+      });
+
       return {
         systemPrompt: event.systemPrompt + "\n\n" + promptContext,
       };
