@@ -45,10 +45,9 @@ export function registerMemoryTool(
     promptSnippet:
       "Save or manage persistent memory that survives across sessions",
     promptGuidelines: [
-      "Use the memory tool proactively when the user corrects you, shares a preference, or reveals personal details worth remembering.",
-      "Use the memory tool when you discover environment facts, project conventions, or reusable patterns useful in future sessions.",
-      "Do NOT use memory for temporary task state, TODO items, or session progress — only for durable, cross-session facts.",
-      "Use target='failure' with category to save what didn't work (failures, corrections, insights).",
+      "Save proactively when the user corrects you, shares a preference, or reveals durable facts.",
+      "Use target='project' for project-scoped facts, target='memory' for global, target='failure' + category for what went wrong.",
+      "Do NOT save task progress, session logs, or TODO state — only facts that survive beyond this session.",
     ],
     parameters: Type.Object({
       action: StringEnum(["add", "replace", "remove"] as const),

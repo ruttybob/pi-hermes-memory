@@ -16,9 +16,8 @@ export function registerSkillTool(pi: ExtensionAPI, store: SkillStore): void {
     description: SKILL_TOOL_DESCRIPTION,
     promptSnippet: "Save or manage reusable procedures and patterns",
     promptGuidelines: [
-      "Use the skill tool after completing complex tasks that required trial and error or multiple tool calls.",
-      "Use 'create' to save a new reusable procedure, 'patch' to update a section of an existing skill.",
-      "Do NOT use skills for temporary task state — only for durable, reusable procedures.",
+      "Create a skill after complex tasks requiring trial and error. Patch existing skills instead of creating duplicates.",
+      "Do NOT create skills for trivial tasks or single commands — skills are for multi-step procedures with gotchas.",
     ],
     parameters: Type.Object({
       action: StringEnum(["create", "view", "patch", "edit", "delete"] as const),

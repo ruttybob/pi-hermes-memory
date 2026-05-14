@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-05-14
+
+### Changed
+
+- Memory tool description: structured tables for targets, anti-patterns, and actions; added `failure` target docs.
+- Skill tool description: format table, anti-patterns (naming, pitfalls, verification), explicit trivial-task guard.
+- `promptGuidelines` for both tools deduplicated — concise triggers only, details live in description.
+
 ## [0.8.0] - 2026-05-14
 
 ### Removed
