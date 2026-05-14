@@ -76,7 +76,6 @@ const defaultConfig = {
 
 const mockStore = {
   getMemoryEntries: () => ["existing memory entry"],
-  getUserEntries: () => ["existing user entry"],
 } as any;
 
 function fireMessageEnd(role: string) {

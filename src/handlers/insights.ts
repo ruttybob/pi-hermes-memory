@@ -10,7 +10,6 @@ export function registerInsightsCommand(pi: ExtensionAPI, store: MemoryStore, pr
     description: "Show what's stored in persistent memory",
     handler: async (_args, ctx) => {
       const memoryEntries = store.getMemoryEntries();
-      const userEntries = store.getUserEntries();
       const projectEntries = projectStore ? projectStore.getMemoryEntries() : null;
 
       const lines: string[] = [];
@@ -31,22 +30,6 @@ export function registerInsightsCommand(pi: ExtensionAPI, store: MemoryStore, pr
             memoryEntries[i].length > 100
               ? memoryEntries[i].slice(0, 100) + "..."
               : memoryEntries[i];
-          lines.push(`  ${i + 1}. ${preview}`);
-        }
-      }
-      lines.push("");
-
-      // User section
-      lines.push("  👤 USER PROFILE");
-      lines.push("  " + "─".repeat(44));
-      if (userEntries.length === 0) {
-        lines.push("  (empty)");
-      } else {
-        for (let i = 0; i < userEntries.length; i++) {
-          const preview =
-            userEntries[i].length > 100
-              ? userEntries[i].slice(0, 100) + "..."
-              : userEntries[i];
           lines.push(`  ${i + 1}. ${preview}`);
         }
       }

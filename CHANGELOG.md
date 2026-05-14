@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-14
+
+### Removed
+
+- SQLite / FTS5 session search — `better-sqlite3`, `sessions.db`, `session_search`, `memory_search` tools and all related infrastructure
+- `USER.md` / user profile target — no more `target="user"`, `userCharLimit`, `getUserEntries()`, or `/memory-interview` onboarding
+- Project migration — `/memory-switch-project` and `migrateLegacyProjectMemoryDirs()`
+- Interview prompt (`INTERVIEW_PROMPT`) and `/memory-interview` command
+
+### Changed
+
+- Skill auto-trigger moved from `turn_end` (blocking) to `session_shutdown` (detached subprocess via `child_process.spawn` + `unref`)
+- Correction detection patterns now support Russian (bilingual: EN + RU)
+- `hasDirectiveWord()` bugfix: `\b` replaced with `(?:^|\s)/(?:$|\s)` for Cyrillic word boundary compatibility
+- Auto-consolidation narrowed to `target="memory"` only
+- Memory tool accepts `target: "memory" | "project" | "failure"` (no `user`)
+- `StoreTarget` type: `"memory" | "failure"`
+- Prompts and policy text updated to reflect Markdown-only architecture
+- Repository URL → `ruttybob/pi-hermes-memory`
+
+### Added
+
+- `/memory-skill-extract` command for manual skill extraction
+- `spawnSkillExtraction()` — fire-and-forget detached subprocess
+- `collectMessageParts()` utility extracted from duplicated code
+- `.pi/prompts/sync-upstream.md` — upstream merge instructions for the fork
+- Russian correction patterns: strong, weak, negative, and directive words
+- 7 tests for `skill-extract` handler
+
+### Tests
+
+- 17 test files, all passing
+- Removed 12 test files for deleted modules
+- New `tests/handlers/skill-extract.test.ts`
+
 ## [0.7.4] - 2026-05-13
 
 ### Added

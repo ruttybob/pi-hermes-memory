@@ -64,7 +64,7 @@ export function registerPreviewContextCommand(
 
       if (memoryBlock) {
         blockCount++;
-        lines.push("  ── MEMORY + USER + RECENT FAILURES ─────────────────────────");
+        lines.push("  ── MEMORY + RECENT FAILURES ─────────────────────────");
         lines.push(memoryBlock);
         lines.push("");
       }

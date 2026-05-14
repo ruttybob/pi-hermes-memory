@@ -1,8 +1,8 @@
 /**
- * Skill auto-trigger — after complex tasks (8+ tool calls, 2+ distinct tool types),
- * trigger automatic skill extraction via pi.exec().
+ * Skill auto-trigger — after complex sessions (8+ tool calls, 2+ distinct tool types),
+ * triggers automatic skill extraction via a detached background subprocess on session shutdown.
  *
- * This implements Hermes' "self-evaluation checkpoint" pattern.
+ * The subprocess does NOT block Pi exit — it uses child_process.spawn with detached + unref.
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -11,6 +11,8 @@ import { SkillStore } from "../store/skill-store.js";
 import { COMBINED_REVIEW_PROMPT, DEFAULT_SKILL_TRIGGER_TOOL_CALLS, ENTRY_DELIMITER } from "../constants.js";
 import type { MemoryConfig } from "../types.js";
 import { getMessageText } from "../types.js";
+import { collectMessageParts } from "./message-parts.js";
+import { spawnSkillExtraction } from "./skill-extract.js";
 
 export function setupSkillAutoTrigger(
   pi: ExtensionAPI,
@@ -18,17 +20,19 @@ export function setupSkillAutoTrigger(
   skillStore: SkillStore,
   config: MemoryConfig,
 ): void {
-  let triggeredThisSession = false;
-
-  // Accumulate tool calls across turns (reset on trigger)
+  // Accumulate tool calls across the entire session
   let toolCallCount = 0;
   const toolTypes = new Set<string>();
+  let sessionHadComplexTask = false;
 
+  // Cache conversation context for shutdown (sessionManager may be stale at that point)
+  let cachedParts: string[] = [];
+
+  // Phase 1: turn_end — count tool calls, cache conversation, set flag
   pi.on("turn_end", async (event, ctx) => {
-    if (triggeredThisSession) return;
+    if (sessionHadComplexTask) return;
 
-    // Count tool calls from this turn's message only (not cumulative branch scan —
-    // otherwise the counter accumulates historical tool calls and fires prematurely).
+    // Count tool calls from this turn's message only
     try {
       const msg = event.message;
       if (msg?.role === "assistant") {
@@ -46,35 +50,33 @@ export function setupSkillAutoTrigger(
       return;
     }
 
-    // Require 8+ tool calls AND 2+ distinct tool types
-    if (toolCallCount < DEFAULT_SKILL_TRIGGER_TOOL_CALLS) return;
-    if (toolTypes.size < 2) return;
+    // Cache recent conversation parts for shutdown use
+    try {
+      const branch = ctx.sessionManager.getBranch();
+      cachedParts = collectMessageParts(branch, 10);
+    } catch {
+      // Session may be stale — ignore
+    }
 
-    triggeredThisSession = true;
+    // Require 8+ tool calls AND 2+ distinct tool types
+    if (toolCallCount >= DEFAULT_SKILL_TRIGGER_TOOL_CALLS && toolTypes.size >= 2) {
+      sessionHadComplexTask = true;
+    }
+  });
+
+  // Phase 2: session_shutdown — launch detached subprocess for skill extraction
+  pi.on("session_shutdown", async (_event, _ctx) => {
+    if (!sessionHadComplexTask) return;
+
+    if (cachedParts.length < 4) return;
 
     try {
-      // Build conversation context
-      const branch = ctx.sessionManager.getBranch();
-      const parts: string[] = [];
-
-      for (const entry of branch) {
-        if (entry.type !== "message") continue;
-        const msg = entry.message;
-        const text = getMessageText(msg);
-        if (!text) continue;
-        const prefix = msg.role === "user" ? "[USER]" : "[ASSISTANT]";
-        parts.push(`${prefix}: ${text}`);
-      }
-
-      // Only include recent context
-      const recentParts = parts.slice(-10);
-
       const currentMemory = store.getMemoryEntries().join(ENTRY_DELIMITER);
       const skillIndex = await skillStore.loadIndex();
       const skillSummary = skillIndex.map((s) => `${s.fileName}: ${s.name} - ${s.description}`).join("\n");
 
       const prompt = [
-        "This was a complex task that required multiple tool calls. Extract any reusable procedures as skills.",
+        "This was a complex session that required multiple tool calls. Extract any reusable procedures as skills.",
         "",
         "--- Existing Skills ---",
         skillSummary || "(none)",
@@ -82,27 +84,18 @@ export function setupSkillAutoTrigger(
         "--- Current Memory ---",
         currentMemory || "(empty)",
         "",
-        "--- Recent Conversation ---",
-        recentParts.join("\n\n"),
+        "--- Session Context ---",
+        cachedParts.join("\n\n"),
         "",
         "If a skill should be created, use the skill tool with action 'create'.",
         "If a related skill already exists, use 'patch' to update it.",
         "If nothing reusable happened, say 'Nothing to extract.' and stop.",
       ].join("\n");
 
-      const result = await pi.exec("pi", ["-p", "--no-session", prompt], {
-        signal: ctx.signal,
-        timeout: 60000,
-      });
-
-      if (result.code === 0 && result.stdout) {
-        const output = result.stdout.trim();
-        if (output && !output.toLowerCase().includes("nothing to extract")) {
-          ctx.ui.notify("🧠 Complex task detected — skill extracted", "info");
-        }
-      }
+      // Fire-and-forget: detached subprocess does NOT block Pi exit
+      spawnSkillExtraction(prompt);
     } catch {
-      // Best-effort — don't block
+      // Best-effort — never block shutdown
     }
   });
 }

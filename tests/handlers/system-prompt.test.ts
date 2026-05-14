@@ -21,7 +21,6 @@ let TEST_MEMORY_DIR = "";
 const testConfig = (): MemoryConfig => ({
   memoryMode: "legacy-inject",
   memoryCharLimit: 5000,
-  userCharLimit: 5000,
   projectCharLimit: 5000,
   nudgeInterval: 10,
   reviewEnabled: true,
@@ -43,13 +42,8 @@ async function writeMemory(content: string): Promise<void> {
   await fs.writeFile(path.join(TEST_MEMORY_DIR, "MEMORY.md"), content, "utf-8");
 }
 
-async function writeUser(content: string): Promise<void> {
-  await fs.writeFile(path.join(TEST_MEMORY_DIR, "USER.md"), content, "utf-8");
-}
-
 async function clearFiles(): Promise<void> {
   try { await fs.unlink(path.join(TEST_MEMORY_DIR, "MEMORY.md")); } catch { /* ignore */ }
-  try { await fs.unlink(path.join(TEST_MEMORY_DIR, "USER.md")); } catch { /* ignore */ }
 }
 
 const SEPARATOR = "═".repeat(46);
@@ -70,7 +64,6 @@ describe("system prompt injection", () => {
 
   it("before_agent_start appends memory block when memory has entries", async () => {
     await writeMemory("Project uses Bun runtime" + ENTRY_DELIMITER + "Prefers tabs over spaces");
-    await writeUser("");
 
     const store = new MemoryStore(testConfig());
     await store.loadFromDisk();
@@ -84,7 +77,6 @@ describe("system prompt injection", () => {
   it("memory block includes header with usage percentage", async () => {
     const entry = "Test entry for header check";
     await writeMemory(entry);
-    await writeUser("");
 
     const store = new MemoryStore(testConfig());
     await store.loadFromDisk();
@@ -99,7 +91,6 @@ describe("system prompt injection", () => {
 
   it("frozen snapshot isolation — entries added after load are NOT in system prompt", async () => {
     await writeMemory("Original entry");
-    await writeUser("");
 
     const store = new MemoryStore(testConfig());
     await store.loadFromDisk();
@@ -138,7 +129,6 @@ describe("system prompt injection", () => {
   it("memory block format matches Hermes — separator and header structure", async () => {
     const entry = "Uses Docker for local dev";
     await writeMemory(entry);
-    await writeUser("");
 
     const store = new MemoryStore(testConfig());
     await store.loadFromDisk();
@@ -157,43 +147,4 @@ describe("system prompt injection", () => {
     await clearFiles();
   });
 
-  it("user profile block included when USER.md has entries", async () => {
-    await writeMemory("");
-    await writeUser("User prefers dark mode");
-
-    const store = new MemoryStore(testConfig());
-    await store.loadFromDisk();
-
-    const prompt = store.formatForSystemPrompt();
-
-    assert.match(prompt, /USER PROFILE \(who the user is\)/, "should contain USER PROFILE header");
-    assert.ok(prompt.includes("User prefers dark mode"), "should contain user profile content");
-
-    await clearFiles();
-  });
-
-  it("both blocks separated by double newline", async () => {
-    await writeMemory("Memory entry one");
-    await writeUser("User profile entry");
-
-    const store = new MemoryStore(testConfig());
-    await store.loadFromDisk();
-
-    const prompt = store.formatForSystemPrompt();
-
-    // The MEMORY block and USER block should be separated by exactly \n\n
-    const memoryIdx = prompt.indexOf("MEMORY");
-    const userIdx = prompt.indexOf("USER PROFILE");
-    assert.ok(memoryIdx < userIdx, "MEMORY block should come before USER PROFILE block");
-
-    // Find where the memory block ends and user block begins
-    // Memory block: separator\nheader\nseparator\ncontent
-    // Then \n\n
-    // Then user block: separator\nheader\nseparator\ncontent
-    const separator = SEPARATOR;
-    // After the content of memory block, there should be \n\n before the user separator
-    assert.ok(prompt.includes("\n\n" + separator), "blocks should be separated by double newline");
-
-    await clearFiles();
-  });
 });

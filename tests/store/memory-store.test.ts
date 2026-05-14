@@ -16,9 +16,7 @@ import { MemoryStore } from "../../src/store/memory-store.js";
 import {
   ENTRY_DELIMITER,
   DEFAULT_MEMORY_CHAR_LIMIT,
-  DEFAULT_USER_CHAR_LIMIT,
   MEMORY_FILE,
-  USER_FILE,
 } from "../../src/constants.js";
 import type { MemoryConfig } from "../../src/types.js";
 
@@ -31,7 +29,6 @@ function makeConfig(overrides?: Partial<MemoryConfig>): MemoryConfig {
   return {
     memoryMode: "legacy-inject",
     memoryCharLimit: DEFAULT_MEMORY_CHAR_LIMIT,
-    userCharLimit: DEFAULT_USER_CHAR_LIMIT,
     projectCharLimit: 5000,
     nudgeInterval: 10,
     reviewEnabled: false,
@@ -84,13 +81,11 @@ function failureEntry(text: string, createdDaysAgo = 0): string {
 
 describe("MemoryStore", { concurrency: 1 }, () => {
   let memoryPath = "";
-  let userPath = "";
   let failurePath = "";
 
   before(async () => {
     MEMORY_DIR = await fs.mkdtemp(path.join(os.tmpdir(), "pi-memory-test-"));
     memoryPath = path.join(MEMORY_DIR, MEMORY_FILE);
-    userPath = path.join(MEMORY_DIR, USER_FILE);
     failurePath = path.join(MEMORY_DIR, "failures.md");
   });
 
@@ -109,12 +104,10 @@ describe("MemoryStore", { concurrency: 1 }, () => {
   /** Aggressively clean both memory files and wait for pending writes. */
   async function cleanSlate(): Promise<void> {
     await removeFile(memoryPath);
-    await removeFile(userPath);
     await removeFile(failurePath);
     await new Promise((r) => setTimeout(r, 250));
     // Remove again in case a pending write sneaked in during the wait
     await removeFile(memoryPath);
-    await removeFile(userPath);
     await removeFile(failurePath);
     await new Promise((r) => setTimeout(r, 50));
   }
@@ -265,23 +258,6 @@ describe("MemoryStore", { concurrency: 1 }, () => {
       const result = await await store.add("memory", "   ");
       assert.ok(!result.success);
       assert.equal(result.error, "Content cannot be empty.");
-    });
-
-    it("writes to USER.md for 'user' target", async () => {
-      const store = new MemoryStore(makeConfig());
-      await store.loadFromDisk();
-
-      const result = await await store.add("user", `${TEST_MARKER} prefers dark mode`);
-      await settle();
-
-      assert.ok(result.success);
-      assert.equal(result.target, "user");
-
-      const raw = await readRaw(userPath);
-      assert.ok(raw.includes(`${TEST_MARKER} prefers dark mode`));
-
-      const memRaw = await readRaw(memoryPath);
-      assert.equal(memRaw, "");
     });
 
     it("writes to MEMORY.md for 'memory' target", async () => {
@@ -479,28 +455,22 @@ describe("MemoryStore", { concurrency: 1 }, () => {
   // ─── loadFromDisk() tests ───
 
   describe("loadFromDisk()", () => {
-    it("reads existing MEMORY.md and USER.md correctly", async () => {
-      // beforeEach already cleaned slate; write test data
+    it("reads existing MEMORY.md correctly", async () => {
       await writeRaw(memoryPath, `${TEST_MARKER} mem entry 1${ENTRY_DELIMITER}${TEST_MARKER} mem entry 2`);
-      await writeRaw(userPath, `${TEST_MARKER} user entry 1`);
 
       const store = new MemoryStore(makeConfig());
       await store.loadFromDisk();
 
       const memEntries = store.getMemoryEntries();
-      const userEntries = store.getUserEntries();
 
       assert.deepEqual(memEntries, [`${TEST_MARKER} mem entry 1`, `${TEST_MARKER} mem entry 2`]);
-      assert.deepEqual(userEntries, [`${TEST_MARKER} user entry 1`]);
     });
 
     it("handles missing files gracefully (returns empty)", async () => {
-      // beforeEach cleaned slate — files should not exist
       const store = new MemoryStore(makeConfig());
       await store.loadFromDisk();
 
       assert.deepEqual(store.getMemoryEntries(), []);
-      assert.deepEqual(store.getUserEntries(), []);
     });
 
     it("deduplicates entries preserving order", async () => {
@@ -610,24 +580,20 @@ describe("MemoryStore", { concurrency: 1 }, () => {
       assert.ok(!result.includes(`${TEST_MARKER} old failure`));
     });
 
-    it("includes both memory and user blocks when both have entries", async () => {
+    it("includes memory block when entries exist", async () => {
       await writeRaw(memoryPath, `${TEST_MARKER} mem data`);
-      await writeRaw(userPath, `${TEST_MARKER} user data`);
 
       const store = new MemoryStore(makeConfig());
       await store.loadFromDisk();
 
       const result = store.formatForSystemPrompt();
-      // Content should be present inside fenced blocks
       assert.ok(result.includes("<memory-context>"), "should use context fencing");
       assert.ok(result.includes("PERSISTENT MEMORY"), "should have guard note");
       assert.ok(result.includes("NOT new user input"), "should disclaim as not user input");
       assert.ok(result.includes("END MEMORY"), "should close fence");
       assert.ok(result.includes("</memory-context>"), "should close XML tag");
       assert.ok(result.includes("MEMORY"), "should contain MEMORY header");
-      assert.ok(result.includes("USER PROFILE"), "should contain USER PROFILE header");
       assert.ok(result.includes(`${TEST_MARKER} mem data`));
-      assert.ok(result.includes(`${TEST_MARKER} user data`));
     });
   });
 
@@ -675,24 +641,4 @@ describe("MemoryStore", { concurrency: 1 }, () => {
     });
   });
 
-  // ─── Both targets ───
-
-  describe("both targets", () => {
-    it("add to 'user' goes to USER.md, add to 'memory' goes to MEMORY.md", async () => {
-      const store = new MemoryStore(makeConfig());
-      await store.loadFromDisk();
-
-      await store.add("user", `${TEST_MARKER} user fact`);
-      await store.add("memory", `${TEST_MARKER} memory fact`);
-      await settle();
-
-      const userRaw = await readRaw(userPath);
-      const memRaw = await readRaw(memoryPath);
-
-      assert.ok(userRaw.includes(`${TEST_MARKER} user fact`));
-      assert.ok(!userRaw.includes(`${TEST_MARKER} memory fact`));
-      assert.ok(memRaw.includes(`${TEST_MARKER} memory fact`));
-      assert.ok(!memRaw.includes(`${TEST_MARKER} user fact`));
-    });
-  });
 });

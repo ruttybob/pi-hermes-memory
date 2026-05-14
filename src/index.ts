@@ -1,10 +1,12 @@
 /**
- * Pi Hermes Memory Extension
+ * Pi Hermes Memory Extension (ruttybob fork)
  *
- * Brings Hermes-style persistent memory and a learning loop to any Pi user.
- * After `pi install`, users get:
+ * Stripped-down version — Markdown-only persistent memory for Pi.
+ * Removed: SQLite, session search, USER.md, interview, project migration.
  *
- * 1. Persistent Memory — MEMORY.md + USER.md that survive across sessions
+ * Features:
+ *
+ * 1. Persistent Memory — MEMORY.md survives across sessions
  * 2. Background Learning Loop — auto-saves notable facts every N turns
  * 3. Session-End Flush — saves memories before compaction/shutdown
  * 4. Auto-Consolidation — merges memory when full instead of erroring
@@ -14,12 +16,11 @@
  * 8. /memory-insights — shows what's stored
  * 9. /memory-skills — lists procedural skills
  * 10. /memory-consolidate — manual consolidation trigger
- * 11. /memory-interview — onboarding interview to pre-fill user profile
- * 12. /memory-switch-project — list project memories
- * 13. Context Fencing — <memory-context> tags prevent injection through stored memory
- * 14. Memory Aging — entry timestamps guide consolidation
+ * 11. /memory-skill-extract — manual skill extraction
+ * 12. Context Fencing — <memory-context> tags prevent injection through stored memory
+ * 13. Memory Aging — entry timestamps guide consolidation
  *
- * See docs/ROADMAP.md for full roadmap and Hermes competitive analysis.
+ * See docs/ROADMAP.md for full roadmap.
  */
 
 import * as path from "node:path";
@@ -27,13 +28,8 @@ import * as os from "node:os";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { MemoryStore } from "./store/memory-store.js";
 import { SkillStore } from "./store/skill-store.js";
-import { DatabaseManager } from "./store/db.js";
-import { indexSession } from "./store/session-indexer.js";
-import { parseSessionFile } from "./store/session-parser.js";
 import { registerMemoryTool } from "./tools/memory-tool.js";
 import { registerSkillTool } from "./tools/skill-tool.js";
-import { registerSessionSearchTool } from "./tools/session-search-tool.js";
-import { registerMemorySearchTool } from "./tools/memory-search-tool.js";
 import { setupBackgroundReview } from "./handlers/background-review.js";
 import { setupSessionFlush } from "./handlers/session-flush.js";
 import { registerInsightsCommand } from "./handlers/insights.js";
@@ -41,16 +37,12 @@ import { triggerConsolidation, registerConsolidateCommand } from "./handlers/aut
 import { setupCorrectionDetector } from "./handlers/correction-detector.js";
 import { setupSkillAutoTrigger } from "./handlers/skill-auto-trigger.js";
 import { registerSkillsCommand } from "./handlers/skills-command.js";
-import { registerInterviewCommand } from "./handlers/interview.js";
-import { registerSwitchProjectCommand } from "./handlers/switch-project.js";
-import { registerIndexSessionsCommand } from "./handlers/index-sessions.js";
 import { registerLearnMemoryCommand } from "./handlers/learn-memory.js";
-import { registerSyncMarkdownMemoriesCommand, syncMarkdownMemoriesToSqlite } from "./handlers/sync-markdown-memories.js";
+import { registerSkillExtractCommand } from "./handlers/skill-extract.js";
 import { registerPreviewContextCommand } from "./handlers/preview-context.js";
 import { loadConfig } from "./config.js";
 import { detectProject } from "./project.js";
 import { buildPromptContext } from "./prompt-context.js";
-import { migrateLegacyProjectMemoryDirs } from "./project-memory-migration.js";
 
 export default function (pi: ExtensionAPI) {
   const config = loadConfig();
@@ -58,17 +50,6 @@ export default function (pi: ExtensionAPI) {
   const globalDir = config.memoryDir ?? path.join(os.homedir(), ".pi", "agent", "memory");
   const store = new MemoryStore(config);
   const skillStore = new SkillStore(path.join(globalDir, "skills"));
-  const dbManager = new DatabaseManager(globalDir);
-
-  // Keep project memory available for users upgrading from the old
-  // ~/.pi/agent/<project>/ layout. This is non-destructive: legacy folders
-  // remain in place while entries are copied/merged into projects-memory/.
-  migrateLegacyProjectMemoryDirs(globalDir, config.projectsMemoryDir);
-  try {
-    syncMarkdownMemoriesToSqlite(dbManager, globalDir, config.projectsMemoryDir);
-  } catch {
-    // Best-effort only: failed SQLite backfill should not block extension startup.
-  }
 
   // Detect project from cwd using shared helper
   const project = detectProject(config.projectsMemoryDir);
@@ -97,8 +78,8 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // ── 3. Register the memory tool (with project store + SQLite sync) ──
-  registerMemoryTool(pi, store, projectStore, dbManager, projectName);
+  // ── 3. Register the memory tool (Markdown-only, no SQLite sync) ──
+  registerMemoryTool(pi, store, projectStore);
 
   // ── 4. Register the skill tool ──
   registerSkillTool(pi, skillStore);
@@ -116,7 +97,7 @@ export default function (pi: ExtensionAPI) {
   registerConsolidateCommand(pi, store);
 
   // ── 8. Setup correction detection ──
-  setupCorrectionDetector(pi, store, projectStore, config, dbManager, projectName);
+  setupCorrectionDetector(pi, store, projectStore, config);
 
   // ── 9. Setup skill auto-trigger ──
   setupSkillAutoTrigger(pi, store, skillStore, config);
@@ -124,41 +105,7 @@ export default function (pi: ExtensionAPI) {
   // ── 10. Register commands ──
   registerInsightsCommand(pi, store, projectStore, projectName);
   registerSkillsCommand(pi, skillStore);
-  registerInterviewCommand(pi, store);
-  registerSwitchProjectCommand(pi, config);
   registerLearnMemoryCommand(pi);
-  registerSyncMarkdownMemoriesCommand(pi, dbManager, globalDir, config.projectsMemoryDir);
+  registerSkillExtractCommand(pi, store, skillStore, config);
   registerPreviewContextCommand(pi, store, projectStore, skillStore, projectName, config);
-
-  // ── 11. SQLite session search + extended memory ──
-  registerSessionSearchTool(pi, dbManager);
-  registerMemorySearchTool(pi, dbManager);
-  registerIndexSessionsCommand(pi);
-
-  // ── 12. Auto-index session on shutdown ──
-  pi.on("session_shutdown", async (_event, _ctx) => {
-    try {
-      const fs = require("node:fs");
-      const sessionsDir = path.join(os.homedir(), ".pi", "agent", "sessions");
-      const cwd = process.cwd();
-      const encodedCwd = cwd.replace(/\//g, "-");
-      const sessionDir = path.join(sessionsDir, encodedCwd);
-
-      if (fs.existsSync(sessionDir)) {
-        // Find the most recent JSONL file (the one we just finished)
-        const files = fs.readdirSync(sessionDir)
-          .filter((f: string) => f.endsWith(".jsonl"))
-          .sort()
-          .reverse();
-        if (files.length > 0) {
-          const sessionData = parseSessionFile(path.join(sessionDir, files[0]));
-          if (sessionData) {
-            indexSession(dbManager, sessionData);
-          }
-        }
-      }
-    } catch {
-      // Silent fail — don't block shutdown
-    }
-  });
 }

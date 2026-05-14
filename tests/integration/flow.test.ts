@@ -15,7 +15,7 @@ import * as assert from "node:assert";
 import { MemoryStore, type MemoryConfig } from "../../src/store/memory-store.js";
 import { scanContent } from "../../src/store/content-scanner.js";
 import { getMessageText } from "../../src/types.js";
-import { ENTRY_DELIMITER, MEMORY_FILE, USER_FILE, DEFAULT_MEMORY_CHAR_LIMIT, DEFAULT_USER_CHAR_LIMIT, DEFAULT_NUDGE_INTERVAL, DEFAULT_FLUSH_MIN_TURNS } from "../../src/constants.js";
+import { ENTRY_DELIMITER, MEMORY_FILE, DEFAULT_MEMORY_CHAR_LIMIT, DEFAULT_NUDGE_INTERVAL, DEFAULT_FLUSH_MIN_TURNS } from "../../src/constants.js";
 
 // ─── Cross-module contracts ────────────────────────────────────────────
 
@@ -102,7 +102,6 @@ describe("integration: cross-module contracts", () => {
   describe("constants are consistent", () => {
     it("defaults are positive and reasonable", () => {
       assert.ok(DEFAULT_MEMORY_CHAR_LIMIT > 1000);
-      assert.ok(DEFAULT_USER_CHAR_LIMIT > 500);
       assert.ok(DEFAULT_NUDGE_INTERVAL >= 1);
       assert.ok(DEFAULT_FLUSH_MIN_TURNS >= 1);
     });
@@ -115,12 +114,10 @@ describe("integration: cross-module contracts", () => {
 
     it("file names are non-empty", () => {
       assert.ok(MEMORY_FILE.length > 0);
-      assert.ok(USER_FILE.length > 0);
     });
 
     it("entry delimiter does not appear in file names", () => {
       assert.ok(!MEMORY_FILE.includes(ENTRY_DELIMITER));
-      assert.ok(!USER_FILE.includes(ENTRY_DELIMITER));
     });
   });
 });

@@ -18,7 +18,6 @@ describe("loadConfig", () => {
     assert.strictEqual(config.memoryPolicyStyle, "full");
     assert.strictEqual(config.memoryPolicyCustomText, undefined);
     assert.strictEqual(config.memoryCharLimit, 5000);
-    assert.strictEqual(config.userCharLimit, 5000);
     assert.strictEqual(config.nudgeInterval, 10);
     assert.strictEqual(config.reviewRecentMessages, 0);
     assert.strictEqual(config.reviewEnabled, true);
@@ -63,7 +62,6 @@ describe("loadConfig", () => {
     assert.strictEqual(config.failureInjectionMaxEntries, 2);
     assert.strictEqual(config.projectsMemoryDir, "my-memory");
     // Unset values use defaults
-    assert.strictEqual(config.userCharLimit, 5000);
     assert.strictEqual(config.reviewEnabled, true);
   });
 
@@ -97,7 +95,6 @@ describe("loadConfig", () => {
     assert.strictEqual(config.flushOnShutdown, false);
     assert.strictEqual(config.flushMinTurns, 20);
     assert.strictEqual(config.memoryCharLimit, 5000);
-    assert.strictEqual(config.userCharLimit, 5000);
     assert.strictEqual(config.nudgeInterval, 10);
   });
 

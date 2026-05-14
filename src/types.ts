@@ -15,8 +15,6 @@ export interface MemoryConfig {
   memoryPolicyCustomText?: string;
   /** Max chars for MEMORY.md (agent notes). Default: 5000 */
   memoryCharLimit: number;
-  /** Max chars for USER.md (user profile). Default: 5000 */
-  userCharLimit: number;
   /** Max chars for project-level MEMORY.md. Default: 5000 */
   projectCharLimit: number;
   /** Turns between background auto-reviews. Default: 10 */
@@ -59,10 +57,6 @@ export interface MemoryConfig {
   failureInjectionMaxEntries: number;
   /** Tool calls before triggering background review (in addition to turn count). Default: 15 */
   nudgeToolCalls: number;
-  /** Enable session history search via SQLite FTS5. Default: true */
-  sessionSearchEnabled?: boolean;
-  /** Days to retain session history. Default: 90 */
-  sessionRetentionDays?: number;
 }
 
 export type MemoryCategory =
@@ -79,7 +73,7 @@ export interface MemoryResult {
   message?: string;
   warning?: string;
   warnings?: string[];
-  target?: "memory" | "user" | "failure" | "project";
+  target?: "memory" | "failure" | "project";
   entries?: string[];
   usage?: string;
   entry_count?: number;
@@ -90,7 +84,6 @@ export interface MemoryResult {
 
 export interface MemorySnapshot {
   memory: string;
-  user: string;
 }
 
 export interface ConsolidationResult {

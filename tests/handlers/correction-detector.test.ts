@@ -5,11 +5,6 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { DatabaseManager } from "../../src/store/db.js";
-import { getMemories } from "../../src/store/sqlite-memory-store.js";
 import { isCorrection, setupCorrectionDetector } from "../../src/handlers/correction-detector.js";
 
 // ─── Pattern matching tests ───
@@ -167,6 +162,91 @@ describe("isCorrection", () => {
     });
   });
 
+  // ── Русский язык (bilingual support) ──
+
+  describe("russian patterns", () => {
+    describe("strong patterns", () => {
+      it("matches 'я же сказал используй pnpm'", () => {
+        assert.strictEqual(isCorrection("я же сказал используй pnpm"), true);
+      });
+      it("matches 'я же говорил не делай так'", () => {
+        assert.strictEqual(isCorrection("я же говорил не делай так"), true);
+      });
+      it("matches 'мы уже обсуждали это'", () => {
+        assert.strictEqual(isCorrection("мы уже обсуждали это"), true);
+      });
+      it("matches 'это не то что я просил'", () => {
+        assert.strictEqual(isCorrection("это не то что я просил"), true);
+      });
+      it("matches 'не делай так'", () => {
+        assert.strictEqual(isCorrection("не делай так"), true);
+      });
+      it("matches 'пожалуйста не надо'", () => {
+        assert.strictEqual(isCorrection("пожалуйста не надо"), true);
+      });
+    });
+
+    describe("weak patterns with directive", () => {
+      it("matches 'нет, используй yarn'", () => {
+        assert.strictEqual(isCorrection("нет, используй yarn"), true);
+      });
+      it("matches 'не так, пиши через async/await'", () => {
+        assert.strictEqual(isCorrection("не так, пиши через async/await"), true);
+      });
+      it("matches 'вообще-то, запусти через npm'", () => {
+        assert.strictEqual(isCorrection("вообще-то, запусти через npm"), true);
+      });
+      it("matches 'стоп, исправь тесты'", () => {
+        assert.strictEqual(isCorrection("стоп, исправь тесты"), true);
+      });
+      it("matches 'неправильно, удали этот файл'", () => {
+        assert.strictEqual(isCorrection("неправильно, удали этот файл"), true);
+      });
+      it("does NOT match 'нет наверное' (no directive)", () => {
+        assert.strictEqual(isCorrection("нет наверное"), false);
+      });
+    });
+
+    describe("negative patterns", () => {
+      it("suppresses 'нет, ничего'", () => {
+        assert.strictEqual(isCorrection("нет, ничего"), false);
+      });
+      it("suppresses 'нет проблем'", () => {
+        assert.strictEqual(isCorrection("нет проблем"), false);
+      });
+      it("suppresses 'нет спасибо'", () => {
+        assert.strictEqual(isCorrection("нет спасибо"), false);
+      });
+      it("suppresses 'нет, не надо'", () => {
+        assert.strictEqual(isCorrection("нет, не надо"), false);
+      });
+      it("suppresses 'вообще отлично выглядит'", () => {
+        assert.strictEqual(isCorrection("вообще отлично выглядит"), false);
+      });
+      it("suppresses 'вообще правильно'", () => {
+        assert.strictEqual(isCorrection("вообще правильно"), false);
+      });
+      it("suppresses 'стоп здесь'", () => {
+        assert.strictEqual(isCorrection("стоп здесь"), false);
+      });
+    });
+
+    describe("non-corrections in russian", () => {
+      it("does NOT match 'да, сделай так'", () => {
+        assert.strictEqual(isCorrection("да, сделай так"), false);
+      });
+      it("does NOT match 'выглядит хорошо'", () => {
+        assert.strictEqual(isCorrection("выглядит хорошо"), false);
+      });
+      it("does NOT match 'спасибо'", () => {
+        assert.strictEqual(isCorrection("спасибо"), false);
+      });
+      it("does NOT match 'отлично, продолжай'", () => {
+        assert.strictEqual(isCorrection("отлично, продолжай"), false);
+      });
+    });
+  });
+
   describe("custom pattern config", () => {
     it("matches custom strong patterns", () => {
       assert.strictEqual(
@@ -222,8 +302,6 @@ describe("setupCorrectionDetector handler", () => {
   let handlers: Record<string, Function[]>;
   let execCalls: any[];
   let notifyCalls: any[];
-  let tmpDir: string;
-  let dbManager: DatabaseManager;
 
   function createMockPi(execReturn?: { code: number; stdout: string; stderr: string }) {
     const ret = execReturn ?? { code: 0, stdout: "Saved correction", stderr: "" };
@@ -243,7 +321,7 @@ describe("setupCorrectionDetector handler", () => {
 
   const mockStore = {
     getMemoryEntries: () => ["existing entry"],
-    getUserEntries: () => [],
+    addFailure: async () => ({ success: true, target: 'failure', entry_count: 1, message: 'Failure memory saved: correction' }),
   } as any;
 
   const config = {
@@ -251,7 +329,6 @@ describe("setupCorrectionDetector handler", () => {
     nudgeInterval: 10,
     reviewEnabled: false,
     memoryCharLimit: 5000,
-    userCharLimit: 5000,
     projectCharLimit: 5000,
     flushOnCompact: false,
     flushOnShutdown: false,
@@ -298,13 +375,10 @@ describe("setupCorrectionDetector handler", () => {
     handlers = {};
     execCalls = [];
     notifyCalls = [];
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "correction-detector-test-"));
-    dbManager = new DatabaseManager(tmpDir);
   });
 
   afterEach(() => {
-    dbManager.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    // cleanup
   });
 
   it("triggers pi.exec when correction detected", async () => {
@@ -352,90 +426,6 @@ describe("setupCorrectionDetector handler", () => {
     await settle();
 
     assert.strictEqual(execCalls.length, firstCallCount, "second correction should be rate-limited");
-  });
-
-  it("syncs direct correction saves into SQLite", async () => {
-    const pi = createMockPi();
-    const correctionStore = {
-      ...mockStore,
-      addFailure: async () => ({ success: true, target: 'failure', entry_count: 1, message: 'Failure memory saved: correction' }),
-    } as any;
-
-    setupCorrectionDetector(pi, correctionStore, null, config, dbManager);
-
-    const branch = [
-      { type: "message", message: { role: "user", content: [{ type: "text", text: "no, use pnpm instead" }] } },
-      { type: "message", message: { role: "assistant", content: [{ type: "text", text: "ok" }] } },
-    ];
-
-    fireMessageEnd("user", "no, use pnpm instead");
-    fireTurnEnd(branch);
-    await settle();
-
-    const failures = getMemories(dbManager, { target: 'failure' });
-    assert.strictEqual(failures.length, 1);
-    assert.match(failures[0].content, /use pnpm instead/);
-    assert.strictEqual(failures[0].category, 'correction');
-  });
-
-  it("syncs project correction saves into SQLite with project scope", async () => {
-    const pi = createMockPi();
-    const correctionStore = {
-      ...mockStore,
-      addFailure: async () => ({ success: true, target: 'failure', entry_count: 1, message: 'Failure memory saved: correction' }),
-    } as any;
-    const projectStore = {
-      getMemoryEntries: () => [],
-    } as any;
-
-    setupCorrectionDetector(pi, correctionStore, projectStore, config, dbManager, 'project-a');
-
-    const branch = [
-      { type: "message", message: { role: "user", content: [{ type: "text", text: "no, use pnpm in this repo" }] } },
-      { type: "message", message: { role: "assistant", content: [{ type: "text", text: "ok" }] } },
-    ];
-
-    fireMessageEnd("user", "no, use pnpm in this repo");
-    fireTurnEnd(branch);
-    await settle();
-
-    const projectFailures = getMemories(dbManager, { target: 'failure', project: 'project-a' });
-    assert.strictEqual(projectFailures.length, 1);
-    assert.match(projectFailures[0].content, /use pnpm in this repo/);
-    assert.match(projectFailures[0].content, /Project: project-a/);
-    assert.strictEqual(projectFailures[0].category, 'correction');
-  });
-
-  it("does not break correction handling when SQLite sync fails", async () => {
-    const pi = createMockPi();
-    let addFailureCalls = 0;
-    const correctionStore = {
-      ...mockStore,
-      addFailure: async () => {
-        addFailureCalls++;
-        return { success: true, target: 'failure', entry_count: 1, message: 'Failure memory saved: correction' };
-      },
-    } as any;
-
-    const failingDbManager = {
-      getDb: () => {
-        throw new Error('sqlite unavailable');
-      },
-    } as unknown as DatabaseManager;
-
-    setupCorrectionDetector(pi, correctionStore, null, config, failingDbManager);
-
-    const branch = [
-      { type: "message", message: { role: "user", content: [{ type: "text", text: "no, use yarn instead" }] } },
-      { type: "message", message: { role: "assistant", content: [{ type: "text", text: "ok" }] } },
-    ];
-
-    fireMessageEnd("user", "no, use yarn instead");
-    fireTurnEnd(branch);
-    await settle();
-
-    assert.ok(execCalls.length >= 1, 'correction review should still run');
-    assert.strictEqual(addFailureCalls, 1, 'Markdown correction save should still happen');
   });
 
   it("does not register handlers when correctionDetection is false", () => {

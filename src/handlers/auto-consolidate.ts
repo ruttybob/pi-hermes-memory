@@ -15,17 +15,16 @@ import type { ConsolidationResult } from "../types.js";
 export async function triggerConsolidation(
   pi: ExtensionAPI,
   store: MemoryStore,
-  target: "memory" | "user" | "failure",
+  target: "memory",
   signal?: AbortSignal,
 ): Promise<ConsolidationResult> {
-  const entries =
-    target === "memory" ? store.getMemoryEntries() : store.getUserEntries();
+  const entries = store.getMemoryEntries();
   const currentContent = entries.join(ENTRY_DELIMITER);
 
   const prompt = [
     CONSOLIDATION_PROMPT,
     "",
-    `--- Current ${target === "user" ? "User Profile" : "Memory"} Entries ---`,
+    "--- Current Memory Entries ---",
     currentContent || "(empty)",
     "",
     `Use the memory tool to consolidate. Target: '${target}'`,
@@ -64,24 +63,18 @@ export function registerConsolidateCommand(
     handler: async (_args, ctx) => {
       const results: string[] = [];
 
-      for (const target of ["memory", "user"] as const) {
-        const entries =
-          target === "memory"
-            ? store.getMemoryEntries()
-            : store.getUserEntries();
+      const entries = store.getMemoryEntries();
 
-        if (entries.length === 0) {
-          results.push(`${target}: (empty, nothing to consolidate)`);
-          continue;
-        }
-
-        const result = await triggerConsolidation(pi, store, target, ctx.signal);
+      if (entries.length === 0) {
+        results.push("memory: (empty, nothing to consolidate)");
+      } else {
+        const result = await triggerConsolidation(pi, store, "memory", ctx.signal);
 
         if (result.consolidated) {
           await store.loadFromDisk();
-          results.push(`${target}: ✅ consolidated`);
+          results.push("memory: ✅ consolidated");
         } else {
-          results.push(`${target}: ❌ ${result.error}`);
+          results.push(`memory: ❌ ${result.error}`);
         }
       }
 

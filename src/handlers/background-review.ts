@@ -82,7 +82,6 @@ export function setupBackgroundReview(
     const parts = applyRecentMessageLimit(allParts, config.reviewRecentMessages);
 
     const currentMemory = store.getMemoryEntries().join("\n§\n");
-    const currentUser = store.getUserEntries().join("\n§\n");
     const currentProject = projectStore ? projectStore.getMemoryEntries().join("\n§\n") : null;
 
     const reviewPrompt = [
@@ -90,9 +89,6 @@ export function setupBackgroundReview(
       "",
       "--- Current Memory ---",
       currentMemory || "(empty)",
-      "",
-      "--- Current User Profile ---",
-      currentUser || "(empty)",
     ];
 
     if (currentProject !== null) {

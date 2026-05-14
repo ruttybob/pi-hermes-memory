@@ -1,7 +1,7 @@
 {
   "name": "pi-hermes-memory",
-  "version": "0.7.5",
-  "description": "🧠 Persistent memory + 🔍 session search + 🛡️ secret scanning for Pi. Token-aware policy-only memory by default, SQLite FTS5 search, auto-consolidation, procedural skills. 368 tests. Ported from Hermes agent.",
+  "version": "0.8.0",
+  "description": "🧠 Persistent memory for Pi — Markdown-based, token-aware policy-only memory by default, auto-consolidation, procedural skills, correction detection.",
   "type": "module",
   "main": "src/index.ts",
   "files": [
@@ -24,9 +24,6 @@
     "pi-extension",
     "memory",
     "persistent-memory",
-    "session-search",
-    "sqlite",
-    "fts5",
     "skills",
     "learning-loop",
     "agent",
@@ -36,13 +33,12 @@
     "correction-detection",
     "auto-consolidation",
     "memory-aging",
-    "context-fencing",
-    "two-tier-memory"
+    "context-fencing"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chandra447/pi-hermes-memory"
+    "url": "https://github.com/ruttybob/pi-hermes-memory"
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": ">=0.70.0"
@@ -50,12 +46,9 @@
   "devDependencies": {
     "@mariozechner/pi-ai": "^0.70.0",
     "@mariozechner/pi-coding-agent": "^0.70.0",
-    "@types/better-sqlite3": "^7.6.13",
     "tsx": "^4.21.0",
     "typebox": "^1.1.33",
     "typescript": "^6.0.3"
   },
-  "dependencies": {
-    "better-sqlite3": "^12.9.0"
-  }
+  "dependencies": {}
 }

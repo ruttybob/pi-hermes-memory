@@ -29,7 +29,6 @@ function createMockPi(execReturn?: { code: number; stdout: string; stderr: strin
 
 const mockStore = {
   getMemoryEntries: () => ["old entry 1", "old entry 2"],
-  getUserEntries: () => ["user fact 1"],
   loadFromDisk: async () => {},
 } as any;
 
@@ -91,19 +90,9 @@ describe("triggerConsolidation", () => {
     assert.ok(result.error!.includes("network failure"), "should include original error");
   });
 
-  it("includes user profile entries when target is 'user'", async () => {
-    const pi = createMockPi();
-    await triggerConsolidation(pi, mockStore, "user");
-
-    const prompt = execCalls[0][1][execCalls[0][1].length - 1];
-    assert.ok(prompt.includes("user fact 1"), "prompt should include user entries");
-    assert.ok(prompt.includes("User Profile"), "prompt should reference user profile");
-  });
-
   it("handles empty entries gracefully", async () => {
     const emptyStore = {
       getMemoryEntries: () => [],
-      getUserEntries: () => [],
       loadFromDisk: async () => {},
     } as any;
 
@@ -133,7 +122,6 @@ describe("MemoryStore auto-consolidation integration", () => {
     const { MemoryStore } = await import("../../src/store/memory-store.js");
     const store = new MemoryStore({
       memoryCharLimit: 120,
-      userCharLimit: 120,
       nudgeInterval: 10,
       reviewEnabled: false,
       flushOnCompact: false,
@@ -150,7 +138,7 @@ describe("MemoryStore auto-consolidation integration", () => {
       consolidatorCalled = true;
       consolidatorTarget = target;
       // Remove all entries to simulate consolidation freeing space
-      const entries = target === "memory" ? store.getMemoryEntries() : store.getUserEntries();
+      const entries = store.getMemoryEntries();
       for (const entry of [...entries]) {
         await store.remove(target, entry);
       }
@@ -178,7 +166,6 @@ describe("MemoryStore auto-consolidation integration", () => {
 
     const store = new MemoryStore({
       memoryCharLimit: 50,
-      userCharLimit: 50,
       nudgeInterval: 10,
       reviewEnabled: false,
       flushOnCompact: false,
@@ -208,7 +195,6 @@ describe("MemoryStore auto-consolidation integration", () => {
 
     const store = new MemoryStore({
       memoryCharLimit: 50,
-      userCharLimit: 50,
       nudgeInterval: 10,
       reviewEnabled: false,
       flushOnCompact: false,

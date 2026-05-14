@@ -85,7 +85,7 @@ async function emit(
   }
 }
 
-const mockStore = { getMemoryEntries: () => [], getUserEntries: () => [] } as any;
+const mockStore = { getMemoryEntries: () => [] } as any;
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 

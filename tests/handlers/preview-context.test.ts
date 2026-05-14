@@ -80,8 +80,6 @@ describe("registerPreviewContextCommand", () => {
     assert.match(out, /Mode: policy-only/);
     assert.match(out, /Policy style: full/);
     assert.match(out, /Full Markdown memories are NOT injected/);
-    assert.match(out, /memory_search/);
-    assert.match(out, /target="failure"/);
     assert.ok(out.includes(MEMORY_POLICY_PROMPT));
     assert.match(out, /Blocks shown: 1/);
   });
@@ -139,7 +137,7 @@ describe("registerPreviewContextCommand", () => {
     assert.strictEqual(notifyCalls.length, 1);
     const out = notifyCalls[0].message;
     assert.match(out, /Injected Context Preview/);
-    assert.match(out, /MEMORY \+ USER \+ RECENT FAILURES/);
+    assert.match(out, /MEMORY \+ RECENT FAILURES/);
     assert.match(out, /PROJECT MEMORY \(pi-hermes-memory\)/);
     assert.match(out, /SKILL INDEX/);
     assert.match(out, /Blocks shown: 3/);

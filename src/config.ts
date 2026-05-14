@@ -4,7 +4,6 @@ import * as os from "node:os";
 import type { MemoryConfig, MemoryOverflowStrategy } from "./types.js";
 import {
   DEFAULT_MEMORY_CHAR_LIMIT,
-  DEFAULT_USER_CHAR_LIMIT,
   DEFAULT_PROJECT_CHAR_LIMIT,
   DEFAULT_PROJECTS_MEMORY_DIR,
   DEFAULT_NUDGE_INTERVAL,
@@ -26,7 +25,6 @@ const DEFAULT_CONFIG: MemoryConfig = {
   memoryMode: "policy-only",
   memoryPolicyStyle: "full",
   memoryCharLimit: DEFAULT_MEMORY_CHAR_LIMIT,
-  userCharLimit: DEFAULT_USER_CHAR_LIMIT,
   projectCharLimit: DEFAULT_PROJECT_CHAR_LIMIT,
   nudgeInterval: DEFAULT_NUDGE_INTERVAL,
   reviewRecentMessages: DEFAULT_REVIEW_RECENT_MESSAGES,
@@ -76,7 +74,6 @@ export function loadConfig(configPath = DEFAULT_CONFIG_PATH): MemoryConfig {
       ) config.memoryPolicyStyle = parsed.memoryPolicyStyle;
       if (typeof parsed.memoryPolicyCustomText === "string") config.memoryPolicyCustomText = parsed.memoryPolicyCustomText;
       if (typeof parsed.memoryCharLimit === "number") config.memoryCharLimit = parsed.memoryCharLimit;
-      if (typeof parsed.userCharLimit === "number") config.userCharLimit = parsed.userCharLimit;
       if (typeof parsed.nudgeInterval === "number") config.nudgeInterval = parsed.nudgeInterval;
       if (isNonNegativeNumber(parsed.reviewRecentMessages)) config.reviewRecentMessages = parsed.reviewRecentMessages;
       if (typeof parsed.reviewEnabled === "boolean") config.reviewEnabled = parsed.reviewEnabled;
