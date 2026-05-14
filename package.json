@@ -17,7 +17,8 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tests/run-all.sh"
+    "test": "tests/run-all.sh",
+    "prepare": "husky"
   },
   "keywords": [
     "pi-package",
@@ -46,9 +47,9 @@
   "devDependencies": {
     "@mariozechner/pi-ai": "^0.70.0",
     "@mariozechner/pi-coding-agent": "^0.70.0",
+    "husky": "^9.1.7",
     "tsx": "^4.21.0",
     "typebox": "^1.1.33",
     "typescript": "^6.0.3"
-  },
-  "dependencies": {}
+  }
 }
