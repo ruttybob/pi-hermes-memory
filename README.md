@@ -1,8 +1,8 @@
 <div align="center">
 
-![Pi Hermes Memory](docs/images/pi_memory.png)
+![Pi Self Memory](docs/images/pi_memory.png)
 
-# 🧠 Pi Hermes Memory
+# 🧠 Pi Self Memory
 
 **Persistent memory + session search + secret scanning for Pi**
 
@@ -25,7 +25,7 @@ Your Pi agent normally forgets everything when you close a session. **This exten
 
 ```bash
 # Install
-pi install npm:pi-hermes-memory
+pi install npm:pi-self-memory
 
 # Index your past sessions (one-time)
 /memory-index-sessions
@@ -82,19 +82,19 @@ Every write — memory and skills — passes through a scanner before being acce
 ## Installation
 
 ```bash
-pi install npm:pi-hermes-memory
+pi install npm:pi-self-memory
 ```
 
 Or install from GitHub:
 
 ```bash
-pi install git:github:chandra447/pi-hermes-memory
+pi install git:github:chandra447/pi-self-memory
 ```
 
 Or test locally without installing:
 
 ```bash
-pi -e /path/to/pi-hermes-memory/src/index.ts
+pi -e /path/to/pi-self-memory/src/index.ts
 ```
 
 ## Two-Tier Memory Architecture
@@ -342,7 +342,7 @@ This means skills build up naturally over time without you having to ask.
 
 ## Configuration
 
-Create `~/.pi/agent/hermes-memory-config.json`:
+Create `~/.pi/agent/self-memory-config.json`:
 
 ```json
 {
@@ -415,7 +415,7 @@ Create `~/.pi/agent/hermes-memory-config.json`:
 │   └── skills/
 │       ├── debug-typescript-errors.md
 │       └── deploy-checklist.md
-├── hermes-memory-config.json
+├── self-memory-config.json
 └── ...
 ```
 

@@ -6,7 +6,7 @@ import type { ExtensionAPI, ExtensionCommandContext } from "@mariozechner/pi-cod
 
 export function registerLearnMemoryCommand(pi: ExtensionAPI): void {
   pi.registerCommand("learn-memory-tool", {
-    description: "Learn how to use the pi-hermes-memory extension effectively",
+    description: "Learn how to use the pi-self-memory extension effectively",
     handler: async (_args, ctx: ExtensionCommandContext) => {
       const section = await ctx.ui.select("Pi Hermes Memory Guide", [
         "📦 What Gets Saved",

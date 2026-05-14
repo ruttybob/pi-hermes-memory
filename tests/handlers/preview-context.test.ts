@@ -129,7 +129,7 @@ describe("registerPreviewContextCommand", () => {
       projectBlock: "<memory-context>PROJECT</memory-context>",
       skillIndex: "<memory-context>SKILLS</memory-context>",
       withProjectStore: true,
-      projectName: "pi-hermes-memory",
+      projectName: "pi-self-memory",
       memoryMode: "legacy-inject",
     });
 
@@ -138,7 +138,7 @@ describe("registerPreviewContextCommand", () => {
     const out = notifyCalls[0].message;
     assert.match(out, /Injected Context Preview/);
     assert.match(out, /MEMORY \+ RECENT FAILURES/);
-    assert.match(out, /PROJECT MEMORY \(pi-hermes-memory\)/);
+    assert.match(out, /PROJECT MEMORY \(pi-self-memory\)/);
     assert.match(out, /SKILL INDEX/);
     assert.match(out, /Blocks shown: 3/);
   });

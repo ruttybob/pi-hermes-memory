@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for the Hermes Memory extension.
+ * Shared TypeScript types for the Pi Self Memory extension.
  */
 
 import type { TextContent } from "@mariozechner/pi-ai";

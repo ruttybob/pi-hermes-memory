@@ -1,4 +1,4 @@
-# Pi Hermes Memory Extension
+# Pi Self Memory Extension
 
 ## Project Overview
 
@@ -70,5 +70,5 @@ pi -e ./src/index.ts
 ## Installation (for users)
 
 ```bash
-pi install github:chandra447/pi-hermes-memory
+pi install github:chandra447/pi-self-memory
 ```

@@ -1,4 +1,4 @@
-# Tasks — Pi Hermes Memory Extension
+# Tasks — Pi Self Memory Extension
 
 > **Workflow**: When you start a task, change `[ ]` to `[~]`. When done, change to `[x]` and note the commit hash.
 > Progress is tracked per-epic. Each epic has a clear definition of done.
@@ -121,8 +121,8 @@ _Done when: `/memory-insights` shows formatted output and the extension is polis
 
 ## Epic 8: Configuration & Settings
 
-_Done when: users can customize behavior via `~/.pi/agent/hermes-memory-config.json`._
-- [x] Read config from `~/.pi/agent/hermes-memory-config.json` — `src/config.ts`
+_Done when: users can customize behavior via `~/.pi/agent/self-memory-config.json`._
+- [x] Read config from `~/.pi/agent/self-memory-config.json` — `src/config.ts`
 - [x] All `MemoryConfig` fields are configurable with type validation
 - [x] Missing keys fall back to defaults
 - [x] Documented in README.md
@@ -166,7 +166,7 @@ _Done when: extension is installable via `pi install` and has user-facing docs._
 
 - [x] `README.md` — What it does, installation, usage, configuration — `ed22fa6`
 - [x] `README.md` — Example screenshots (manual verification — needs Pi TUI) of `/memory-insights` output — requires Pi TUI
-- [x] Verify `pi install github:chandra447/pi-hermes-memory` works end-to-end — requires Pi CLI
+- [x] Verify `pi install github:chandra447/pi-self-memory` works end-to-end — requires Pi CLI
 - [x] Tag v0.1.0 release on GitHub — `7983f09`
 
 ---
@@ -188,7 +188,7 @@ _Done when: extension is installable via `pi install` and has user-facing docs._
 
 **Automated test coverage: 119 tests, 0 failures, 0 type errors.**
 
-**Manual verification required:** Run `pi -e ./src/index.ts` or `pi install github:chandra447/pi-hermes-memory`, then:
+**Manual verification required:** Run `pi -e ./src/index.ts` or `pi install github:chandra447/pi-self-memory`, then:
 1. Have the LLM save a memory and verify it appears in `~/.pi/agent/memory/MEMORY.md`
 2. Start a new session (`/new`) and verify the memory appears in the system prompt
 3. Use 10+ turns and verify auto-review triggers

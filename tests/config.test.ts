@@ -5,7 +5,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { loadConfig } from "../src/config.js";
 
-const TEST_CONFIG_PATH = path.join(os.tmpdir(), `hermes-memory-config-test-${process.pid}.json`);
+const TEST_CONFIG_PATH = path.join(os.tmpdir(), `self-memory-config-test-${process.pid}.json`);
 
 afterEach(() => {
   fs.rmSync(TEST_CONFIG_PATH, { force: true });

@@ -1,5 +1,5 @@
 {
-  "name": "pi-hermes-memory",
+  "name": "pi-self-memory",
   "version": "0.8.0",
   "description": "🧠 Persistent memory for Pi — Markdown-based, token-aware policy-only memory by default, auto-consolidation, procedural skills, correction detection.",
   "type": "module",
@@ -27,7 +27,7 @@
     "skills",
     "learning-loop",
     "agent",
-    "hermes",
+    "self-memory",
     "secret-scanning",
     "content-scanner",
     "correction-detection",
@@ -38,7 +38,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruttybob/pi-hermes-memory"
+    "url": "https://github.com/ruttybob/pi-self-memory"
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": ">=0.70.0"

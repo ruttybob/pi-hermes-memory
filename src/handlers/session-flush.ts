@@ -1,6 +1,6 @@
 /**
  * Session flush — gives the agent one turn to save memories before context is lost.
- * Ported from hermes-agent/run_agent.py (flush_memories).
+ * Ported from hermes-agent/run_agent.py.
  * See PLAN.md → "Hermes Source File Reference Map" for source lines.
  */
 

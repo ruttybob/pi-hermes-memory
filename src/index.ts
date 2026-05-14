@@ -1,7 +1,7 @@
 /**
- * Pi Hermes Memory Extension (ruttybob fork)
+ * Pi Self Memory Extension
  *
- * Stripped-down version — Markdown-only persistent memory for Pi.
+ * Persistent memory for Pi — Markdown-based, token-aware.
  * Removed: SQLite, session search, USER.md, interview, project migration.
  *
  * Features:
@@ -49,7 +49,7 @@ export default function (pi: ExtensionAPI) {
 
   const globalDir = config.memoryDir ?? path.join(os.homedir(), ".pi", "agent", "memory");
   const store = new MemoryStore(config);
-  const skillStore = new SkillStore(path.join(globalDir, "skills"));
+  const skillStore = new SkillStore(path.join(process.cwd(), ".pi", "skills"));
 
   // Detect project from cwd using shared helper
   const project = detectProject(config.projectsMemoryDir);

@@ -4,7 +4,7 @@
  * Skills capture HOW to do something (procedural knowledge), as opposed
  * to MemoryStore which captures WHAT (declarative knowledge).
  *
- * Storage: ~/.pi/agent/memory/skills/<slug>.md
+ * Storage: <cwd>/.pi/skills/<slug>.md
  * Format: YAML-like frontmatter + markdown body (no yaml dependency)
  * Progressive disclosure: index (name+description) in system prompt,
  *   full content loaded on demand via skill tool.
@@ -63,7 +63,7 @@ export class SkillStore {
   private skillsDir: string;
 
   constructor(skillsDir?: string) {
-    this.skillsDir = skillsDir ?? path.join(os.homedir(), ".pi", "agent", "memory", "skills");
+    this.skillsDir = skillsDir ?? path.join(process.cwd(), ".pi", "skills");
   }
 
   // ─── Read ───

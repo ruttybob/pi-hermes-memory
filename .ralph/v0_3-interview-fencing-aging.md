@@ -1,6 +1,6 @@
 # v0.3.0: Interview + Hardening — ✅ COMPLETE
 
-Published as pi-hermes-memory@0.3.0 on npm.
+Published as pi-self-memory@0.3.0 on npm.
 
 ## Epic 1: /memory-interview ✅
 - [x] Add INTERVIEW_PROMPT to constants.ts

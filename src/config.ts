@@ -47,7 +47,7 @@ export const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
   ".pi",
   "agent",
-  "hermes-memory-config.json",
+  "self-memory-config.json",
 );
 
 export function loadConfig(configPath = DEFAULT_CONFIG_PATH): MemoryConfig {

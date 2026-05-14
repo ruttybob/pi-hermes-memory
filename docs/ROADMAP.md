@@ -1,4 +1,4 @@
-# Pi Hermes Memory — Roadmap
+# Pi Self Memory — Roadmap
 
 > From markdown files to a pluggable memory substrate for any Pi agent harness.
 
@@ -308,7 +308,7 @@ Agent has access to tools:
 
 ## v0.5.0 — External Sync
 
-**Goal**: Run a local backend (SQLite) as the source of truth, with optional external sync (Mem0 or Honcho) that mirrors writes and supplements search. Based on the [Hermes MemoryManager pattern](https://github.com/NousResearch/hermes-agent/blob/main/agent/memory_manager.py).
+**Goal**: Run a local backend (SQLite) as the source of truth, with optional external sync (Mem0 or Honcho) that mirrors writes and supplements search. Based on the [Self MemoryManager pattern](https://github.com/NousResearch/hermes-agent/blob/main/agent/memory_manager.py).
 
 ### Architecture: Orchestrator + Sync Mirror
 
@@ -425,7 +425,7 @@ These hold across all versions:
 
 ```mermaid
 gantt
-    title Pi Hermes Memory — Release Timeline
+    title Pi Self Memory — Release Timeline
     dateFormat YYYY-MM-DD
     axisFormat %b %Y
 

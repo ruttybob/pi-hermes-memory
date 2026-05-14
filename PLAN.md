@@ -1,4 +1,4 @@
-# Pi Hermes Memory Extension — Complete Implementation Plan
+# Pi Self Memory Extension — Complete Implementation Plan
 
 > **Status**: Ready for implementation  
 > **Approach**: Installable Pi extension using `pi install`  
@@ -62,7 +62,7 @@ When implementing in a new session, read these files **first** in this order. Ev
 
 ## Hermes Architecture Understanding
 
-### How Hermes Memory Works (source: `hermes-agent/tools/memory_tool.py`)
+### How Self Memory Works (source: `hermes-agent/tools/memory_tool.py`)
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -172,7 +172,7 @@ Before any write, content is scanned for:
 ## File Structure
 
 ```
-pi-hermes-memory/
+pi-self-memory/
 ├── package.json              # For pi install
 ├── src/
 │   ├── index.ts              # Extension entry point — wires everything together
@@ -918,7 +918,7 @@ export default function (pi: ExtensionAPI) {
 
 ```json
 {
-  "name": "pi-hermes-memory",
+  "name": "pi-self-memory",
   "version": "1.0.0",
   "description": "Hermes-style persistent memory and learning loop for Pi coding agent",
   "main": "src/index.ts",

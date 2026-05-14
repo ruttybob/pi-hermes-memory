@@ -11,7 +11,7 @@ The [package gallery](https://pi.dev/packages) automatically displays any npm pa
 Current state:
 ```json
 {
-  "name": "pi-hermes-memory",
+  "name": "pi-self-memory",
   "keywords": []  // missing pi-package keyword
   // no "pi" manifest
 }
@@ -20,7 +20,7 @@ Current state:
 Target state:
 ```json
 {
-  "name": "pi-hermes-memory",
+  "name": "pi-self-memory",
   "version": "0.1.0",
   "description": "Persistent memory and self-directed learning loop for Pi — ported from the Hermes agent harness.",
   "keywords": [
@@ -28,7 +28,7 @@ Target state:
     "pi-extension",
     "memory",
     "learning",
-    "hermes"
+    "self-memory"
   ],
   "files": [
     "src",
@@ -38,11 +38,11 @@ Target state:
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chandra447/pi-hermes-memory"
+    "url": "https://github.com/chandra447/pi-self-memory"
   },
   "pi": {
     "extensions": ["./src/index.ts"],
-    "image": "https://raw.githubusercontent.com/chandra447/pi-hermes-memory/main/docs/assets/hermes-memory-preview.png"
+    "image": "https://raw.githubusercontent.com/chandra447/pi-self-memory/main/docs/assets/hermes-memory-preview.png"
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": "*"
@@ -80,9 +80,9 @@ npm publish --access public
 ### 4. Verify
 
 After publishing:
-1. Check `https://www.npmjs.com/package/pi-hermes-memory`
+1. Check `https://www.npmjs.com/package/pi-self-memory`
 2. Check `https://pi.dev/packages` — should appear within minutes
-3. Test install: `pi install npm:pi-hermes-memory`
+3. Test install: `pi install npm:pi-self-memory`
 
 ## Post-Publish
 
@@ -90,24 +90,24 @@ After publishing:
 
 Before (git):
 ```bash
-pi install git:github:chandra447/pi-hermes-memory
+pi install git:github:chandra447/pi-self-memory
 ```
 
 After (npm):
 ```bash
-pi install npm:pi-hermes-memory
+pi install npm:pi-self-memory
 ```
 
 ### Update README installation instructions
 
 Replace:
 ```
-pi install github:chandra447/pi-hermes-memory
+pi install github:chandra447/pi-self-memory
 ```
 
 With:
 ```
-pi install npm:pi-hermes-memory
+pi install npm:pi-self-memory
 ```
 
 Keep the git option as an alternative.
@@ -136,7 +136,7 @@ npm version major && npm publish
 - [ ] `npm publish --access public`
 - [ ] Verify on npmjs.com
 - [ ] Verify on pi.dev/packages
-- [ ] Test `pi install npm:pi-hermes-memory`
+- [ ] Test `pi install npm:pi-self-memory`
 - [ ] Update README installation instructions
 - [ ] Add demo screenshot/image for pi.dev gallery (optional but recommended)
 - [ ] Tag release: `git tag v0.1.0-npm && git push --tags`

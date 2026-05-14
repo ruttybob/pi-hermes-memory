@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Skills storage path changed from `~/.pi/agent/memory/skills/` to `<cwd>/.pi/skills/` — skills are now project-scoped
+- Renamed project from `pi-hermes-memory` to `pi-self-memory` across all files (package.json, docs, config, tests)
+
 ## [0.8.1] - 2026-05-14
 
 ### Changed
@@ -33,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory tool accepts `target: "memory" | "project" | "failure"` (no `user`)
 - `StoreTarget` type: `"memory" | "failure"`
 - Prompts and policy text updated to reflect Markdown-only architecture
-- Repository URL → `ruttybob/pi-hermes-memory`
+- Repository URL → `ruttybob/pi-self-memory`
 
 ### Added
 
@@ -58,18 +63,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- Config loading tests now use an injected temporary config path instead of writing to `~/.pi/agent/hermes-memory-config.json`.
+- Config loading tests now use an injected temporary config path instead of writing to `~/.pi/agent/self-memory-config.json`.
 
 ## [0.7.3] - 2026-05-12
 
 ### Added
 
-- **Configurable memory policy prompt** ([#26](https://github.com/chandra447/pi-hermes-memory/pull/26)): `policy-only` mode now supports `memoryPolicyStyle` (`full`, `compact`, `custom`, or `none`) and `memoryPolicyCustomText`. The default `full` style preserves the existing v0.7 policy prompt behavior.
+- **Configurable memory policy prompt** ([#26](https://github.com/chandra447/pi-self-memory/pull/26)): `policy-only` mode now supports `memoryPolicyStyle` (`full`, `compact`, `custom`, or `none`) and `memoryPolicyCustomText`. The default `full` style preserves the existing v0.7 policy prompt behavior.
 
 ### Fixed
 
-- **Bun runtime SQLite compatibility** ([#27](https://github.com/chandra447/pi-hermes-memory/pull/27), [#25](https://github.com/chandra447/pi-hermes-memory/issues/25), [#24](https://github.com/chandra447/pi-hermes-memory/issues/24)): Added a runtime fallback from `better-sqlite3` to `bun:sqlite` in `src/store/db.ts` so memory and search features do not crash when loaded in Bun contexts.
-- **Safer DB initialization across runtimes** ([#27](https://github.com/chandra447/pi-hermes-memory/pull/27)): PRAGMA setup now consistently enables `journal_mode=WAL` and `foreign_keys=ON` for each connection, and legacy target-constraint migration handling is hardened to avoid partial schema updates.
+- **Bun runtime SQLite compatibility** ([#27](https://github.com/chandra447/pi-self-memory/pull/27), [#25](https://github.com/chandra447/pi-self-memory/issues/25), [#24](https://github.com/chandra447/pi-self-memory/issues/24)): Added a runtime fallback from `better-sqlite3` to `bun:sqlite` in `src/store/db.ts` so memory and search features do not crash when loaded in Bun contexts.
+- **Safer DB initialization across runtimes** ([#27](https://github.com/chandra447/pi-self-memory/pull/27)): PRAGMA setup now consistently enables `journal_mode=WAL` and `foreign_keys=ON` for each connection, and legacy target-constraint migration handling is hardened to avoid partial schema updates.
 
 ## [0.7.2] - 2026-05-11
 
@@ -131,8 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Background review no longer blocks interactive chat** ([#10](https://github.com/chandra447/pi-hermes-memory/issues/10)): The `turn_end` handler now spawns the review subprocess as fire-and-forget instead of `await`-ing it. `reviewInProgress` is reset immediately so the next review cycle can proceed. Notifications are delivered asynchronously via `.then()`.
-- **Auto-review errors silenced on Windows** ([#9](https://github.com/chandra447/pi-hermes-memory/issues/9)): The auto-review error notification (`[hermes] auto-review failed (exit=...)`) has been removed. Auto-review is best-effort — subprocess failures (non-zero exits, timeouts, spawn errors) are silently ignored. The next review cycle will retry naturally.
+- **Background review no longer blocks interactive chat** ([#10](https://github.com/chandra447/pi-self-memory/issues/10)): The `turn_end` handler now spawns the review subprocess as fire-and-forget instead of `await`-ing it. `reviewInProgress` is reset immediately so the next review cycle can proceed. Notifications are delivered asynchronously via `.then()`.
+- **Auto-review errors silenced on Windows** ([#9](https://github.com/chandra447/pi-self-memory/issues/9)): The auto-review error notification (`[hermes] auto-review failed (exit=...)`) has been removed. Auto-review is best-effort — subprocess failures (non-zero exits, timeouts, spawn errors) are silently ignored. The next review cycle will retry naturally.
 
 ## [0.2.0] - 2026-04-26
 
@@ -182,7 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Configuration
 
-New settings in `~/.pi/agent/hermes-memory-config.json`:
+New settings in `~/.pi/agent/self-memory-config.json`:
 
 | Setting | Default | Description |
 |---|---|---|
