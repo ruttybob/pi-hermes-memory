@@ -8,7 +8,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { MemoryStore } from "../store/memory-store.js";
 import { SkillStore } from "../store/skill-store.js";
-import { COMBINED_REVIEW_PROMPT, DEFAULT_SKILL_TRIGGER_TOOL_CALLS, ENTRY_DELIMITER } from "../constants.js";
+import { DEFAULT_SKILL_TRIGGER_TOOL_CALLS, ENTRY_DELIMITER } from "../constants.js";
 import type { MemoryConfig } from "../types.js";
 import { getMessageText } from "../types.js";
 import { collectMessageParts } from "./message-parts.js";

@@ -108,7 +108,7 @@ Priority: user corrections > environment facts > procedural knowledge.
 \`add\` (new entry), \`replace\` (update existing — \`old_text\` identifies it), \`remove\` (delete — \`old_text\` identifies it).`;
 
 // ─── Background review prompt ───
-export const COMBINED_REVIEW_PROMPT = `Review the conversation above and consider these aspects:
+export const COMBINED_REVIEW_PROMPT_BASE = `Review the conversation above and consider these aspects:
 
 **Failures & Corrections**: Did anything fail or go wrong? Extract these as failure memories:
 - [failure] What was tried but didn't work? (e.g., "Used localStorage for tokens — XSS vulnerability")
@@ -119,11 +119,22 @@ export const COMBINED_REVIEW_PROMPT = `Review the conversation above and conside
 
 For failures, include: what was tried, why it failed, what error occurred, and what worked instead.
 
-**Memory**: Has the user revealed durable facts about the environment, project conventions, or preferences that will matter in future sessions? If so, save using the memory tool.
+**Memory**: Has the user revealed durable facts about the environment, project conventions, or preferences that will matter in future sessions? If so, save using the memory tool.`;
 
-**Skills**: Was a complex, non-trivial approach used to complete a task — one that required trial and error, multiple tool calls, or changing course? If so, save a reusable procedure using the skill tool with action 'create'. Include: when to use it, step-by-step procedure, pitfalls to avoid, and how to verify success. If a related skill already exists, use action 'patch' to update it instead of creating a duplicate.
+export const COMBINED_REVIEW_PROMPT_SKILLS = `
+
+**Skills**: Was a complex, non-trivial approach used to complete a task — one that required trial and error, multiple tool calls, or changing course? If so, save a reusable procedure using the skill tool with action 'create'. Include: when to use it, step-by-step procedure, pitfalls to avoid, and how to verify success. If a related skill already exists, use action 'patch' to update it instead of creating a duplicate.`;
+
+export const COMBINED_REVIEW_PROMPT_SUFFIX = `
 
 Only act if there's something genuinely worth saving. If nothing stands out, just say 'Nothing to save.' and stop.`;
+
+/** Build the full review prompt, optionally including the skills paragraph. */
+export function buildReviewPrompt(skillsEnabled: boolean): string {
+  return COMBINED_REVIEW_PROMPT_BASE
+    + (skillsEnabled ? COMBINED_REVIEW_PROMPT_SKILLS : "")
+    + COMBINED_REVIEW_PROMPT_SUFFIX;
+}
 
 // ─── Flush prompt ───
 export const FLUSH_PROMPT = `[System: The session is being compressed. Save anything worth remembering — prioritize user corrections and recurring patterns over task-specific details.]`;

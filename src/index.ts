@@ -82,7 +82,9 @@ export default function (pi: ExtensionAPI) {
   registerMemoryTool(pi, store, projectStore);
 
   // ── 4. Register the skill tool ──
-  registerSkillTool(pi, skillStore);
+  if (config.skillsEnabled) {
+    registerSkillTool(pi, skillStore);
+  }
 
   // ── 5. Setup background learning loop (with tool-call-aware nudge) ──
   setupBackgroundReview(pi, store, projectStore, config);
@@ -100,12 +102,16 @@ export default function (pi: ExtensionAPI) {
   setupCorrectionDetector(pi, store, projectStore, config);
 
   // ── 9. Setup skill auto-trigger ──
-  setupSkillAutoTrigger(pi, store, skillStore, config);
+  if (config.skillsEnabled) {
+    setupSkillAutoTrigger(pi, store, skillStore, config);
+  }
 
   // ── 10. Register commands ──
   registerInsightsCommand(pi, store, projectStore, projectName);
-  registerSkillsCommand(pi, skillStore);
   registerLearnMemoryCommand(pi);
-  registerSkillExtractCommand(pi, store, skillStore, config);
+  if (config.skillsEnabled) {
+    registerSkillsCommand(pi, skillStore);
+    registerSkillExtractCommand(pi, store, skillStore, config);
+  }
   registerPreviewContextCommand(pi, store, projectStore, skillStore, projectName, config);
 }

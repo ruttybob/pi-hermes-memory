@@ -9,7 +9,7 @@
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { MemoryStore } from "../store/memory-store.js";
-import { COMBINED_REVIEW_PROMPT } from "../constants.js";
+import { buildReviewPrompt } from "../constants.js";
 import type { MemoryConfig } from "../types.js";
 import { applyRecentMessageLimit, collectMessageParts } from "./message-parts.js";
 
@@ -85,7 +85,7 @@ export function setupBackgroundReview(
     const currentProject = projectStore ? projectStore.getMemoryEntries().join("\n§\n") : null;
 
     const reviewPrompt = [
-      COMBINED_REVIEW_PROMPT,
+      buildReviewPrompt(config.skillsEnabled !== false),
       "",
       "--- Current Memory ---",
       currentMemory || "(empty)",

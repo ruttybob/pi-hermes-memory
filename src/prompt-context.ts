@@ -5,37 +5,48 @@ import type { SkillStore } from "./store/skill-store.js";
 
 type MemoryPolicyConfig = Pick<MemoryConfig, "memoryPolicyStyle" | "memoryPolicyCustomText">;
 
-export function resolveMemoryPolicyPrompt(config: MemoryPolicyConfig): string {
+export function resolveMemoryPolicyPrompt(config: MemoryPolicyConfig, skillsEnabled = true): string {
   const style = config.memoryPolicyStyle ?? "full";
 
+  let prompt: string;
   switch (style) {
     case "compact":
-      return MEMORY_POLICY_PROMPT_COMPACT;
+      prompt = MEMORY_POLICY_PROMPT_COMPACT;
+      break;
     case "custom":
-      return config.memoryPolicyCustomText && config.memoryPolicyCustomText.trim().length > 0
+      prompt = config.memoryPolicyCustomText && config.memoryPolicyCustomText.trim().length > 0
         ? config.memoryPolicyCustomText
         : MEMORY_POLICY_PROMPT_COMPACT;
+      break;
     case "none":
       return "";
     case "full":
     default:
-      return MEMORY_POLICY_PROMPT;
+      prompt = MEMORY_POLICY_PROMPT;
   }
+
+  if (!skillsEnabled) {
+    prompt = prompt.replace(/- skill:.*\n?/, "");
+  }
+
+  return prompt;
 }
 
 export async function buildPromptContext(
-  config: Pick<MemoryConfig, "memoryMode" | "memoryPolicyStyle" | "memoryPolicyCustomText">,
+  config: Pick<MemoryConfig, "memoryMode" | "memoryPolicyStyle" | "memoryPolicyCustomText" | "skillsEnabled">,
   store: MemoryStore,
   projectStore: MemoryStore | null,
   skillStore: SkillStore,
   projectName: string,
 ): Promise<string> {
+  const skillsEnabled = config.skillsEnabled !== false;
+
   if (config.memoryMode === "policy-only") {
-    return resolveMemoryPolicyPrompt(config);
+    return resolveMemoryPolicyPrompt(config, skillsEnabled);
   }
 
   const memoryBlock = store.formatForSystemPrompt();
-  const skillIndex = await skillStore.formatIndexForSystemPrompt();
+  const skillIndex = skillsEnabled ? await skillStore.formatIndexForSystemPrompt() : "";
   const projectBlock = projectStore ? projectStore.formatProjectBlock(projectName) : "";
 
   const parts: string[] = [];

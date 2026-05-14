@@ -40,6 +40,7 @@ const DEFAULT_CONFIG: MemoryConfig = {
   failureInjectionMaxAgeDays: DEFAULT_FAILURE_INJECTION_MAX_AGE_DAYS,
   failureInjectionMaxEntries: DEFAULT_FAILURE_INJECTION_MAX_ENTRIES,
   nudgeToolCalls: DEFAULT_NUDGE_TOOL_CALLS,
+  skillsEnabled: true,
   projectsMemoryDir: DEFAULT_PROJECTS_MEMORY_DIR,
 };
 
@@ -98,6 +99,7 @@ export function loadConfig(configPath = DEFAULT_CONFIG_PATH): MemoryConfig {
       if (typeof parsed.failureInjectionMaxAgeDays === "number") config.failureInjectionMaxAgeDays = parsed.failureInjectionMaxAgeDays;
       if (typeof parsed.failureInjectionMaxEntries === "number") config.failureInjectionMaxEntries = parsed.failureInjectionMaxEntries;
       if (typeof parsed.nudgeToolCalls === "number") config.nudgeToolCalls = parsed.nudgeToolCalls;
+      if (typeof parsed.skillsEnabled === "boolean") config.skillsEnabled = parsed.skillsEnabled;
       if (typeof parsed.projectCharLimit === "number") config.projectCharLimit = parsed.projectCharLimit;
       if (typeof parsed.memoryDir === "string") config.memoryDir = parsed.memoryDir;
       if (typeof parsed.projectsMemoryDir === "string") config.projectsMemoryDir = parsed.projectsMemoryDir;

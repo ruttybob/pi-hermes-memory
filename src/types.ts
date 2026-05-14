@@ -57,6 +57,8 @@ export interface MemoryConfig {
   failureInjectionMaxEntries: number;
   /** Tool calls before triggering background review (in addition to turn count). Default: 15 */
   nudgeToolCalls: number;
+  /** Enable procedural skills (tool, commands, auto-trigger, prompt injection). Default: true */
+  skillsEnabled: boolean;
 }
 
 export type MemoryCategory =

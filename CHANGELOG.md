@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `skillsEnabled` config option (default `true`) — disables skill tool, commands, auto-trigger, prompt injection, and review prompt paragraph when `false`
+
 ### Changed
 
 - Skills storage path changed from `~/.pi/agent/memory/skills/` to `<cwd>/.pi/skills/` — skills are now project-scoped

@@ -15,13 +15,14 @@ export function registerPreviewContextCommand(
   projectStore: MemoryStore | null,
   skillStore: SkillStore,
   projectName: string,
-  config: Pick<MemoryConfig, "memoryMode" | "memoryPolicyStyle" | "memoryPolicyCustomText"> = { memoryMode: "policy-only" },
+  config: Pick<MemoryConfig, "memoryMode" | "memoryPolicyStyle" | "memoryPolicyCustomText" | "skillsEnabled"> = { memoryMode: "policy-only", skillsEnabled: true },
 ): void {
   pi.registerCommand("memory-preview-context", {
     description: "Preview the memory policy or legacy memory/skill context blocks",
     handler: async (_args, ctx) => {
       if (config.memoryMode === "policy-only") {
-        const policyPrompt = resolveMemoryPolicyPrompt(config);
+        const skillsEnabled = config.skillsEnabled !== false;
+        const policyPrompt = resolveMemoryPolicyPrompt(config, skillsEnabled);
         const lines: string[] = [];
         lines.push("");
         lines.push("  ╔══════════════════════════════════════════════╗");
@@ -48,7 +49,8 @@ export function registerPreviewContextCommand(
 
       const memoryBlock = store.formatForSystemPrompt();
       const projectBlock = projectStore ? projectStore.formatProjectBlock(projectName) : "";
-      const skillIndex = await skillStore.formatIndexForSystemPrompt();
+      const skillsEnabled = config.skillsEnabled !== false;
+      const skillIndex = skillsEnabled ? await skillStore.formatIndexForSystemPrompt() : "";
 
       const lines: string[] = [];
       lines.push("");
