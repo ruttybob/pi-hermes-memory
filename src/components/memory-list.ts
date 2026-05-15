@@ -90,11 +90,6 @@ export class MemoryList {
     const innerW = w - 2;
 
     lines.push(bc + "┌" + "─".repeat(w - 2) + "┐" + rst);
-    lines.push(bc + "│ " + rst + truncateToWidth(
-      `${t.fg("dim", `(${total})  tab/←→ switch · enter edit · ctrl+d del · esc close`)}`,
-      innerW - 2, "",
-    ) + bc + " │" + rst);
-    lines.push(bc + "│" + "─".repeat(innerW) + "│" + rst);
     lines.push(bc + "│ " + rst + this.renderTabBar(innerW - 2) + bc + " │" + rst);
     lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
@@ -136,7 +131,9 @@ export class MemoryList {
       const text = `${label} (${count})`;
       parts.push(i === this.activeTab ? t.bold(t.fg("accent", text)) : t.fg("dim", text));
     }
-    return truncateToWidth(parts.join(t.fg("dim", " │ ")), w, "");
+    const tabs = parts.join(t.fg("dim", " │ "));
+    const hint = t.fg("dim", "←→ tab · enter edit · ctrl+d del · esc close");
+    return truncateToWidth(`${tabs}  ${hint}`, w, "");
   }
 
   private pad(line: string, width: number): string {
