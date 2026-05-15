@@ -95,6 +95,7 @@ export class MemoryList {
       `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab/⇧+tab switch · enter edit · ctrl+d del · esc close")}`,
       innerW - 2, "",
     ) + bc + " │" + rst);
+    lines.push(bc + "│" + rst + "─".repeat(innerW) + bc + "│" + rst);
     lines.push(bc + "│ " + rst + this.renderTabBar(innerW - 2) + bc + " │" + rst);
     lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
