@@ -16,7 +16,7 @@ import { buildPromptContext } from "./prompt-context.js";
 import { REVIEW_PROMPT } from "./constants.js";
 import { MemoryList } from "./components/memory-list.js";
 import { detectProject } from "./project.js";
-import { memNotify } from "./mem-notify.js";
+import { memNotify, memNotifyPersist } from "./mem-notify.js";
 
 export default function (pi: ExtensionAPI) {
   const config = loadConfig();
@@ -103,7 +103,7 @@ export default function (pi: ExtensionAPI) {
       const prompt = [REVIEW_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join("\n§\n") || "(empty)", "",
         projectStore ? `--- Current Project Memory (${projectName}) ---\n${projectStore.getMemoryEntries().join("\n§\n") || "(empty)"}` : "",
         "--- Conversation to Review ---", parts.join("\n\n")].join("\n");
-      memNotify(ctx, "Scanning conversation...");
+      memNotifyPersist(ctx, "Scanning conversation...");
       try {
         const r = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 120000 });
         if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) {
