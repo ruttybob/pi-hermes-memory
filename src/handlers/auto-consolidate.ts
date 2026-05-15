@@ -20,10 +20,10 @@ export function registerConsolidateCommand(pi: ExtensionAPI, store: MemoryStore)
   pi.registerCommand("memory-consolidate", {
     description: "Manually trigger memory consolidation to free up space",
     handler: async (_args: any, ctx: any) => {
-      if (!store.getMemoryEntries().length) { ctx.ui.notify("🔄 Memory is empty — nothing to consolidate.", "info"); return; }
+      if (!store.getMemoryEntries().length) { ctx.ui.notify("Memory is empty — nothing to consolidate.", "info"); return; }
       const r = await triggerConsolidation(pi, store, ctx.signal);
-      if (r.consolidated) { await store.loadFromDisk(); ctx.ui.notify("✅ Memory consolidated.", "info"); }
-      else ctx.ui.notify(`❌ Consolidation failed: ${r.error}`, "info");
+      if (r.consolidated) { await store.loadFromDisk(); ctx.ui.notify("Memory consolidated.", "info"); }
+      else ctx.ui.notify(`Consolidation failed: ${r.error}`, "info");
     },
   });
 }

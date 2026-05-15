@@ -31,7 +31,7 @@ export function setupBackgroundReview(pi: ExtensionAPI, store: MemoryStore, conf
       "--- Conversation to Review ---", applyRecentMessageLimit(parts, config.reviewRecentMessages).join("\n\n")].join("\n");
 
     pi.exec("pi", ["-p", "--no-session", prompt], { signal: undefined, timeout: 120000 })
-      .then((r) => { busy = false; if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) ctx.ui.notify("💾 Memory auto-reviewed and updated", "info"); })
+      .then((r) => { busy = false; if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) ctx.ui.notify("Memory auto-reviewed and updated", "info"); })
       .catch(() => { busy = false; });
   });
 }

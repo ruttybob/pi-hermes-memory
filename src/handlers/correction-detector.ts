@@ -52,7 +52,7 @@ export function setupCorrectionDetector(pi: ExtensionAPI, store: MemoryStore, co
       const prompt = [CORRECTION_SAVE_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join(ENTRY_DELIMITER) || "(empty)", "", "--- Recent Conversation ---", recent.join("\n\n")].join("\n");
       const result = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 30000 });
       if (result.code === 0 && result.stdout?.trim() && !result.stdout.toLowerCase().includes("nothing to save"))
-        ctx.ui.notify("🔧 Correction detected — memory updated", "info");
+        ctx.ui.notify("Correction detected — memory updated", "info");
       try { const u = recent.find((p) => p.startsWith("[USER]")); if (u) await (projectStore ?? store).addFailure(extractDirective(u.replace(/^\[USER\]:\s*/, "")), { category: "correction", failureReason: "User corrected the agent" }); } catch { /* */ }
     } catch { /* */ } finally { busy = false; }
   });

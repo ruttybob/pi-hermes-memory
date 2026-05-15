@@ -42,6 +42,8 @@ export class MemoryList {
   private sel = 0;
   private search: Input;
   private maxVis = 15;
+  private toast = "";
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(o: Opts) {
     this.t = o.theme;
@@ -55,6 +57,13 @@ export class MemoryList {
   }
 
   invalidate(): void { /* */ }
+
+  /** Показать toast на 2 секунды внутри рамки. */
+  showToast(msg: string): void {
+    this.toast = msg;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => { this.toast = ""; this.toastTimer = null; }, 2000);
+  }
 
   /** Вызвать после store-операции (edit/delete) для обновления данных. */
   refresh(): void { this.refreshActiveTab(); }
@@ -116,6 +125,17 @@ export class MemoryList {
       if (start > 0 || end < this.filtered.length) {
         lines.push(bc + "│" + rst + this.pad(t.fg("dim", `  (${this.sel + 1}/${this.filtered.length})`), innerW) + bc + "│" + rst);
       }
+    }
+
+    // Toast status line
+    if (this.toast) {
+      lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
+      lines.push(bc + "│ " + rst + this.pad(t.fg("success", this.toast), innerW - 2) + bc + " │" + rst);
+    }
+
+    if (this.toast) {
+      lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
+      lines.push(bc + "│ " + rst + this.pad(t.fg("dim", this.toast), innerW - 2) + bc + " │" + rst);
     }
 
     lines.push(bc + "└" + "─".repeat(w - 2) + "┘" + rst);

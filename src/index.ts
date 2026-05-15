@@ -77,13 +77,13 @@ export default function (pi: ExtensionAPI) {
         if (action.type === "delete") {
           await (action.target === "failure" ? action.store.removeFailureByIndex(action.index) : action.store.removeByIndex(action.index));
           list.refresh();
-          ctx.ui.notify("🗑 Entry deleted", "info");
+          list.showToast("Entry deleted");
         } else if (action.type === "edit") {
           const edited = await ctx.ui.editor("Edit Memory Entry", action.text);
           if (edited?.trim()) {
             await (action.target === "failure" ? action.store.replaceFailureByIndex(action.index, edited.trim()) : action.store.replaceByIndex(action.index, edited.trim()));
             list.refresh();
-            ctx.ui.notify("✏️ Entry updated", "info");
+            list.showToast("Entry updated");
           }
         }
       }
@@ -106,9 +106,9 @@ export default function (pi: ExtensionAPI) {
         const r = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 120000 });
         if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) {
           await store.loadFromDisk(); if (projectStore) await projectStore.loadFromDisk();
-          ctx.ui.notify("✅ Memory reviewed.", "info");
-        } else ctx.ui.notify("ℹ️ Nothing worth saving.", "info");
-      } catch { ctx.ui.notify("❌ Review failed.", "info"); }
+          ctx.ui.notify("Memory reviewed.", "info");
+        } else ctx.ui.notify("Nothing worth saving.", "info");
+      } catch { ctx.ui.notify("Review failed.", "info"); }
     },
   });
 }
