@@ -6,6 +6,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { MemoryStore } from "../store/memory-store.js";
 import { CORRECTION_SAVE_PROMPT, CORRECTION_STRONG_PATTERNS, CORRECTION_WEAK_PATTERNS, CORRECTION_NEGATIVE_PATTERNS, CORRECTION_DIRECTIVE_WORDS, ENTRY_DELIMITER } from "../constants.js";
 import type { MemoryConfig } from "../types.js";
+import { memNotify } from "../mem-notify.js";
 import { getMessageText } from "../types.js";
 
 function extractDirective(t: string): string { return t.replace(/^(no|wrong|actually|stop|don'?t|that'?s not|I said|I told you)[,\.\s!]+/i, "").replace(/^(please\s+)?/i, "").trim() || t; }
@@ -52,7 +53,7 @@ export function setupCorrectionDetector(pi: ExtensionAPI, store: MemoryStore, co
       const prompt = [CORRECTION_SAVE_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join(ENTRY_DELIMITER) || "(empty)", "", "--- Recent Conversation ---", recent.join("\n\n")].join("\n");
       const result = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 30000 });
       if (result.code === 0 && result.stdout?.trim() && !result.stdout.toLowerCase().includes("nothing to save"))
-        ctx.ui.notify("Correction detected — memory updated", "info");
+        memNotify(ctx, "Correction detected — memory updated");
       try { const u = recent.find((p) => p.startsWith("[USER]")); if (u) await (projectStore ?? store).addFailure(extractDirective(u.replace(/^\[USER\]:\s*/, "")), { category: "correction", failureReason: "User corrected the agent" }); } catch { /* */ }
     } catch { /* */ } finally { busy = false; }
   });

@@ -7,6 +7,7 @@ import { MemoryStore } from "../store/memory-store.js";
 import { REVIEW_PROMPT } from "../constants.js";
 import type { MemoryConfig } from "../types.js";
 import { applyRecentMessageLimit, collectMessageParts } from "./message-parts.js";
+import { memNotify } from "../mem-notify.js";
 
 export function setupBackgroundReview(pi: ExtensionAPI, store: MemoryStore, config: MemoryConfig): void {
   let turns = 0, toolCalls = 0, userTurns = 0, busy = false;
@@ -31,7 +32,7 @@ export function setupBackgroundReview(pi: ExtensionAPI, store: MemoryStore, conf
       "--- Conversation to Review ---", applyRecentMessageLimit(parts, config.reviewRecentMessages).join("\n\n")].join("\n");
 
     pi.exec("pi", ["-p", "--no-session", prompt], { signal: undefined, timeout: 120000 })
-      .then((r) => { busy = false; if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) ctx.ui.notify("Memory auto-reviewed and updated", "info"); })
+      .then((r) => { busy = false; if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) memNotify(ctx, "Memory auto-reviewed"); })
       .catch(() => { busy = false; });
   });
 }

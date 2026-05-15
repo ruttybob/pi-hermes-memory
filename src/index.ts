@@ -16,6 +16,7 @@ import { buildPromptContext } from "./prompt-context.js";
 import { REVIEW_PROMPT } from "./constants.js";
 import { MemoryList } from "./components/memory-list.js";
 import { detectProject } from "./project.js";
+import { memNotify } from "./mem-notify.js";
 
 export default function (pi: ExtensionAPI) {
   const config = loadConfig();
@@ -95,21 +96,21 @@ export default function (pi: ExtensionAPI) {
     description: "Manually trigger a memory review of the current conversation",
     handler: async (_args: any, ctx: any) => {
       let entries: any[];
-      try { entries = ctx.sessionManager.getBranch(); } catch { ctx.ui.notify("No active session.", "info"); return; }
+      try { entries = ctx.sessionManager.getBranch(); } catch { memNotify(ctx, "No active session."); return; }
       const { collectMessageParts } = await import("./handlers/message-parts.js");
       const parts = collectMessageParts(entries);
-      if (parts.length < 2) { ctx.ui.notify("Not enough conversation.", "info"); return; }
+      if (parts.length < 2) { memNotify(ctx, "Not enough conversation."); return; }
       const prompt = [REVIEW_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join("\n§\n") || "(empty)", "",
         projectStore ? `--- Current Project Memory (${projectName}) ---\n${projectStore.getMemoryEntries().join("\n§\n") || "(empty)"}` : "",
         "--- Conversation to Review ---", parts.join("\n\n")].join("\n");
-      ctx.ui.notify("Scanning conversation...", "info");
+      memNotify(ctx, "Scanning conversation...");
       try {
         const r = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 120000 });
         if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) {
           await store.loadFromDisk(); if (projectStore) await projectStore.loadFromDisk();
-          ctx.ui.notify("Memory scanned and updated.", "info");
-        } else ctx.ui.notify("Scan complete — nothing worth saving.", "info");
-      } catch { ctx.ui.notify("Scan failed.", "warning"); }
+          memNotify(ctx, "Memory scanned and updated.");
+        } else memNotify(ctx, "Scan complete — nothing worth saving.");
+      } catch { memNotify(ctx, "Scan failed.", "warning"); }
     },
   });
 }
