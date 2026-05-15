@@ -1,12 +1,14 @@
 /**
  * MemoryList — TUI просмотра/редактирования записей памяти.
- * Две секции: Global Memory + Project Memory (если есть).
+ * Секции: Global Memory, Failures, Project Memory (если есть).
  * Курсор, Ctrl+D удалить, Enter редактировать через ctx.ui.editor(), Esc закрыть.
  */
 
 import { fuzzyFilter, Input, Key, matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import type { MemoryStore } from "../store/memory-store.js";
 import { decode as decodeEntry, strip as stripMetadata } from "../store/memory-store.js";
+
+type Target = "memory" | "failure";
 
 interface Opts {
   store: MemoryStore;
@@ -21,7 +23,7 @@ interface Section {
   label: string;
   entries: string[];
   store: MemoryStore;
-  offset: number;
+  target: Target;
 }
 
 export class MemoryList {
@@ -40,21 +42,20 @@ export class MemoryList {
   invalidate(): void { /* */ }
 
   private buildSections(o: Opts): void {
-    let offset = 0;
     this.sections = [];
+
     const memEntries = o.store.getRawEntries();
-    if (memEntries.length) {
-      this.sections.push({ label: "Memory Entries", entries: memEntries, store: o.store, offset });
-      offset += memEntries.length;
-    }
+    if (memEntries.length) this.sections.push({ label: "Memory Entries", entries: memEntries, store: o.store, target: "memory" });
+
+    const failEntries = o.store.getRawFailureEntries();
+    if (failEntries.length) this.sections.push({ label: "⚠️ Failures & Lessons", entries: failEntries, store: o.store, target: "failure" });
+
     if (o.projectStore) {
       const pEntries = o.projectStore.getRawEntries();
-      if (pEntries.length) {
-        this.sections.push({ label: `📁 Project: ${o.projectName}`, entries: pEntries, store: o.projectStore, offset });
-        offset += pEntries.length;
-      }
+      if (pEntries.length) this.sections.push({ label: `📁 Project: ${o.projectName}`, entries: pEntries, store: o.projectStore, target: "memory" });
     }
-    this.totalCount = offset;
+
+    this.totalCount = this.sections.reduce((s, sec) => s + sec.entries.length, 0);
     this.filtered = this.sections.flatMap((s, si) => s.entries.map((_, ei) => ({ section: si, index: ei })));
   }
 
@@ -65,11 +66,10 @@ export class MemoryList {
 
     if (!this.filtered.length) { lines.push(t.fg("dim", "  No entries found.")); return lines; }
 
-    let rendered = 0; const maxR = this.maxVis;
-    let startIdx = Math.max(0, Math.min(this.sel - Math.floor(maxR / 2), this.filtered.length - maxR));
+    const maxR = this.maxVis;
+    const startIdx = Math.max(0, Math.min(this.sel - Math.floor(maxR / 2), this.filtered.length - maxR));
     const endIdx = Math.min(startIdx + maxR, this.filtered.length);
 
-    // Render section headers + entries
     let curSection = -1;
     for (let fi = startIdx; fi < endIdx; fi++) {
       const { section: si, index: ei } = this.filtered[fi];
@@ -98,9 +98,8 @@ export class MemoryList {
     if (matchesKey(data, Key.ctrl("d")) && this.filtered.length) {
       const { section: si, index: ei } = this.filtered[this.sel];
       const sec = this.sections[si];
-      const txt = stripMetadata(sec.entries[ei]);
-      await (txt.length > 60 ? sec.store.removeByIndex(ei) : sec.store.remove("memory", txt));
-      this.rebuild(sec); this.ui.notify("🗑 Entry deleted", "info"); return;
+      await (sec.target === "failure" ? sec.store.removeFailureByIndex(ei) : sec.store.removeByIndex(ei));
+      this.rebuild(); this.ui.notify("🗑 Entry deleted", "info"); return;
     }
 
     if (matchesKey(data, Key.return) && this.filtered.length) {
@@ -108,17 +107,22 @@ export class MemoryList {
       const sec = this.sections[si];
       const d = decodeEntry(sec.entries[ei]);
       const edited = await this.ui.editor("Edit Memory Entry", d.text);
-      if (edited?.trim()) { await sec.store.replaceByIndex(ei, edited.trim()); this.rebuild(sec); this.ui.notify("✏️ Entry updated", "info"); }
+      if (edited?.trim()) {
+        await (sec.target === "failure" ? sec.store.replaceFailureByIndex(ei, edited.trim()) : sec.store.replaceByIndex(ei, edited.trim()));
+        this.rebuild(); this.ui.notify("✏️ Entry updated", "info");
+      }
       return;
     }
 
     this.search.handleInput(data); this.doFilter();
   }
 
-  private rebuild(sec: Section): void {
-    const entries = sec.store.getRawEntries();
-    sec.entries = entries;
-    // Rebuild all sections + filtered
+  private rebuild(): void {
+    // Refresh entries in all sections
+    this.sections = this.sections.map((sec) => ({
+      ...sec,
+      entries: sec.target === "failure" ? sec.store.getRawFailureEntries() : sec.store.getRawEntries(),
+    }));
     this.totalCount = this.sections.reduce((s, sec) => s + sec.entries.length, 0);
     this.doFilter();
     if (this.sel >= this.filtered.length) this.sel = Math.max(0, this.filtered.length - 1);

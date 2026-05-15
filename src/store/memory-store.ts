@@ -85,6 +85,19 @@ export class MemoryStore {
 
   getMemoryEntries(): string[] { return this.mem.map(strip); }
   getRawEntries(): string[] { return [...this.mem]; }
+  getRawFailureEntries(): string[] { return [...this.fail]; }
+
+  async removeFailureByIndex(i: number): Promise<boolean> {
+    if (i < 0 || i >= this.fail.length) return false;
+    this.fail.splice(i, 1); await this.save("failure"); return true;
+  }
+
+  async replaceFailureByIndex(i: number, newText: string): Promise<boolean> {
+    if (i < 0 || i >= this.fail.length) return false;
+    const se = scanContent(newText); if (se) return false;
+    const d = decode(this.fail[i]); this.fail[i] = encode(newText.trim(), d.created, today());
+    await this.save("failure"); return true;
+  }
 
   async setAllEntries(entries: string[]): Promise<void> { this.mem = entries; await this.save("memory"); }
 
