@@ -91,10 +91,10 @@ export class MemoryList {
 
     lines.push(bc + "┌" + "─".repeat(w - 2) + "┐" + rst);
     lines.push(bc + "│ " + rst + truncateToWidth(
-      `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab/⇧+tab switch · enter edit · ctrl+d del · esc close")}`,
+      `${t.fg("dim", `(${total})  tab/←→ switch · enter edit · ctrl+d del · esc close`)}`,
       innerW - 2, "",
     ) + bc + " │" + rst);
-    lines.push(bc + "│" + rst + "─".repeat(innerW) + bc + "│" + rst);
+    lines.push(bc + "│" + "─".repeat(innerW) + "│" + rst);
     lines.push(bc + "│ " + rst + this.renderTabBar(innerW - 2) + bc + " │" + rst);
     lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
