@@ -91,7 +91,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   // 8. /memory-review — ручной ревью
-  pi.registerCommand("memory-review", {
+  pi.registerCommand("memory-scan", {
     description: "Manually trigger a memory review of the current conversation",
     handler: async (_args: any, ctx: any) => {
       let entries: any[];

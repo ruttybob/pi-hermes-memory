@@ -17,7 +17,7 @@ export async function triggerConsolidation(pi: ExtensionAPI, store: MemoryStore,
 }
 
 export function registerConsolidateCommand(pi: ExtensionAPI, store: MemoryStore): void {
-  pi.registerCommand("memory-consolidate", {
+  pi.registerCommand("memory-pack", {
     description: "Manually trigger memory consolidation to free up space",
     handler: async (_args: any, ctx: any) => {
       if (!store.getMemoryEntries().length) { ctx.ui.notify("Memory is empty — nothing to consolidate.", "info"); return; }

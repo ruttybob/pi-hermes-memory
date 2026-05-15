@@ -133,11 +133,6 @@ export class MemoryList {
       lines.push(bc + "│ " + rst + this.pad(t.fg("success", this.toast), innerW - 2) + bc + " │" + rst);
     }
 
-    if (this.toast) {
-      lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
-      lines.push(bc + "│ " + rst + this.pad(t.fg("dim", this.toast), innerW - 2) + bc + " │" + rst);
-    }
-
     lines.push(bc + "└" + "─".repeat(w - 2) + "┘" + rst);
     return lines;
   }

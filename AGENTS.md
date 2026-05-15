@@ -49,8 +49,8 @@ Pi extension — persistent memory with background collection, auto-consolidatio
 ## Commands
 
 - `/memory` — TUI: табовый просмотр (Memory / Project / Failures), рамка, edit (Enter), delete (Ctrl+D), search, Tab/←→ для переключения
-- `/memory-consolidate` — trigger consolidation to free space
-- `/memory-review` — manually review current conversation
+- `/memory-pack` — trigger consolidation to free space
+- `/memory-scan` — manually review current conversation
 
 ## Development
 
