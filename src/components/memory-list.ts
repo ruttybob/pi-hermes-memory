@@ -2,21 +2,28 @@
  * MemoryList — табовый TUI для просмотра/редактирования памяти.
  * Табы: Memory | Project | Failures | Proj. Failures
  * Tab/Shift+Tab — переключение. Enter — edit, Ctrl+D — delete, Esc — close.
+ *
+ * Edit/delete закрывают overlay через done(action), операция выполняется
+ * на уровне command handler, затем overlay переоткрывается.
  */
 
 import { fuzzyFilter, Input, Key, matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import type { MemoryStore } from "../store/memory-store.js";
 import { decode as decodeEntry, strip as stripMetadata } from "../store/memory-store.js";
 
-type Target = "memory" | "failure";
+export type Target = "memory" | "failure";
+
+/** Действие, возвращаемое при закрытии overlay для edit/delete. */
+export type MemoryAction =
+  | { type: "edit"; store: MemoryStore; target: Target; index: number; text: string }
+  | { type: "delete"; store: MemoryStore; target: Target; index: number; text: string }
+  | null; // null = пользователь нажал Esc (закрыть навсегда)
 
 interface Opts {
   store: MemoryStore;
   projectStore: MemoryStore | null;
   projectName: string;
   theme: { fg: (c: string, t: string) => string; bold: (t: string) => string; italic: (t: string) => string };
-  ui: { editor: (t: string, p: string) => Promise<string | undefined>; notify: (m: string, t?: "error" | "info" | "warning") => void };
-  onClose: () => void;
 }
 
 interface TabDef {
@@ -26,10 +33,8 @@ interface TabDef {
   target: Target;
 }
 
-const PAD = 1; // horizontal padding inside frame
-
 export class MemoryList {
-  private t: Opts["theme"]; private ui: Opts["ui"]; private onClose: () => void;
+  private t: Opts["theme"];
   private tabs: TabDef[] = [];
   private activeTab = 0;
   private tabEntries: string[][] = [];
@@ -39,7 +44,7 @@ export class MemoryList {
   private maxVis = 15;
 
   constructor(o: Opts) {
-    this.t = o.theme; this.ui = o.ui; this.onClose = o.onClose;
+    this.t = o.theme;
     this.search = new Input();
 
     this.tabs.push({ label: "Memory", shortLabel: "Mem", store: o.store, target: "memory" });
@@ -51,6 +56,9 @@ export class MemoryList {
   }
 
   invalidate(): void { /* */ }
+
+  /** Вызвать после store-операции (edit/delete) для обновления данных. */
+  refresh(): void { this.refreshActiveTab(); }
 
   // ─── Entry loading ───
 
@@ -78,34 +86,24 @@ export class MemoryList {
   render(w: number): string[] {
     const t = this.t; const lines: string[] = [];
     const total = this.totalCount();
-    const bc = "\x1b[31m"; // красная рамка
+    const bc = "\x1b[31m";
     const rst = "\x1b[0m";
-    const innerW = w - 2; // subtract │ borders
+    const innerW = w - 2;
 
-    // Frame top
     lines.push(bc + "┌" + "─".repeat(w - 2) + "┐" + rst);
-
-    // Header (inside frame)
     lines.push(bc + "│ " + rst + truncateToWidth(
       `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab/⇧+tab switch · enter edit · ctrl+d del · esc close")}`,
       innerW - 2, "",
     ) + bc + " │" + rst);
-
-    // Tab bar (inside frame)
     lines.push(bc + "│ " + rst + this.renderTabBar(innerW - 2) + bc + " │" + rst);
-
-    // Separator
     lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
-    // Search (inside frame)
     for (const sl of this.search.render(innerW)) {
       lines.push(bc + "│" + rst + this.pad(sl, innerW) + bc + "│" + rst);
     }
 
-    // Separator
     lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
-    // Entries
     const entries = this.tabEntries[this.activeTab];
     if (!this.filtered.length) {
       lines.push(bc + "│" + rst + this.pad(t.fg("dim", `  No entries in ${this.tabs[this.activeTab].label}.`), innerW) + bc + "│" + rst);
@@ -125,7 +123,6 @@ export class MemoryList {
       }
     }
 
-    // Frame bottom
     lines.push(bc + "└" + "─".repeat(w - 2) + "┘" + rst);
     return lines;
   }
@@ -142,17 +139,14 @@ export class MemoryList {
     return truncateToWidth(parts.join(t.fg("dim", " │ ")), w, "");
   }
 
-  /** Pad line to exact width with spaces (ANSI-safe: counts visible chars). */
   private pad(line: string, width: number): string {
-    // Remove ANSI escapes to measure visible length
     const visible = line.replace(/\x1b\[[0-9;]*m/g, "");
-    const pad = Math.max(0, width - visible.length);
-    return line + " ".repeat(pad);
+    return line + " ".repeat(Math.max(0, width - visible.length));
   }
 
-  // ─── Input ───
+  // ─── Input (синхронный — возвращает action или undefined) ───
 
-  async handleInput(data: string): Promise<void> {
+  handleInput(data: string): MemoryAction | undefined {
     if (matchesKey(data, Key.tab)) {
       this.activeTab = (this.activeTab + 1) % this.tabs.length;
       this.sel = 0; this.refreshActiveTab(); return;
@@ -167,25 +161,20 @@ export class MemoryList {
     if (matchesKey(data, Key.pageUp)) { this.sel = Math.max(0, this.sel - this.maxVis); return; }
     if (matchesKey(data, Key.pageDown)) { this.sel = Math.min(this.filtered.length - 1, this.sel + this.maxVis); return; }
 
-    if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c"))) { this.onClose(); return; }
+    if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c"))) return null;
 
     if (matchesKey(data, Key.ctrl("d")) && this.filtered.length) {
       const tab = this.tabs[this.activeTab];
       const ei = this.filtered[this.sel];
-      await (tab.target === "failure" ? tab.store.removeFailureByIndex(ei) : tab.store.removeByIndex(ei));
-      this.refreshActiveTab(); this.ui.notify("🗑 Entry deleted", "info"); return;
+      const text = stripMetadata(this.tabEntries[this.activeTab][ei]);
+      return { type: "delete", store: tab.store, target: tab.target, index: ei, text };
     }
 
     if (matchesKey(data, Key.return) && this.filtered.length) {
       const tab = this.tabs[this.activeTab];
       const ei = this.filtered[this.sel];
       const d = decodeEntry(this.tabEntries[this.activeTab][ei]);
-      const edited = await this.ui.editor("Edit Memory Entry", d.text);
-      if (edited?.trim()) {
-        await (tab.target === "failure" ? tab.store.replaceFailureByIndex(ei, edited.trim()) : tab.store.replaceByIndex(ei, edited.trim()));
-        this.refreshActiveTab(); this.ui.notify("✏️ Entry updated", "info");
-      }
-      return;
+      return { type: "edit", store: tab.store, target: tab.target, index: ei, text: d.text };
     }
 
     this.search.handleInput(data); this.doFilter();

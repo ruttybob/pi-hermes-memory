@@ -54,10 +54,39 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args: any, ctx: any) => {
       await store.loadFromDisk();
       if (projectStore) await projectStore.loadFromDisk();
-      await ctx.ui.custom((tui: any, theme: any, keybindings: any, done: () => void) => {
-        const list = new MemoryList({ store, projectStore, projectName, theme, ui: ctx.ui, onClose: () => done() });
-        return { render: (w: number) => list.render(w), invalidate: () => list.invalidate(), handleInput: (d: string) => { list.handleInput(d).catch(() => {}); } };
-      });
+
+      // Один экземпляр живёт через весь цикл — сохраняет cursor/tab state
+      const { MemoryList } = await import("./components/memory-list.js");
+      let list: any;
+
+      while (true) {
+        const action = await ctx.ui.custom((tui: any, theme: any, _kb: any, done: (r?: any) => void) => {
+          if (!list) list = new MemoryList({ store, projectStore, projectName, theme });
+          return {
+            render: (w: number) => list.render(w),
+            invalidate: () => list.invalidate(),
+            handleInput: (d: string) => {
+              const r = list.handleInput(d);
+              if (r !== undefined) done(r);
+            },
+          };
+        });
+
+        if (!action) break; // Esc → закрыть
+
+        if (action.type === "delete") {
+          await (action.target === "failure" ? action.store.removeFailureByIndex(action.index) : action.store.removeByIndex(action.index));
+          list.refresh();
+          ctx.ui.notify("🗑 Entry deleted", "info");
+        } else if (action.type === "edit") {
+          const edited = await ctx.ui.editor("Edit Memory Entry", action.text);
+          if (edited?.trim()) {
+            await (action.target === "failure" ? action.store.replaceFailureByIndex(action.index, edited.trim()) : action.store.replaceByIndex(action.index, edited.trim()));
+            list.refresh();
+            ctx.ui.notify("✏️ Entry updated", "info");
+          }
+        }
+      }
     },
   });
 
