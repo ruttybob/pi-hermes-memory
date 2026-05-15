@@ -78,31 +78,37 @@ export class MemoryList {
   render(w: number): string[] {
     const t = this.t; const lines: string[] = [];
     const total = this.totalCount();
-    const bc = t.fg("border", ""); // border color prefix
-
-    // Header (outside frame)
-    lines.push(truncateToWidth(
-      `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab/⇧+tab switch · enter edit · ctrl+d del · esc close")}`,
-      w, "",
-    ));
-    lines.push(this.renderTabBar(w));
+    const bc = "\x1b[31m"; // красная рамка
+    const rst = "\x1b[0m";
+    const innerW = w - 2; // subtract │ borders
 
     // Frame top
-    const innerW = w - 2; // subtract │ borders
-    lines.push(bc + "┌" + "─".repeat(w - 2) + "┐");
+    lines.push(bc + "┌" + "─".repeat(w - 2) + "┐" + rst);
+
+    // Header (inside frame)
+    lines.push(bc + "│ " + rst + truncateToWidth(
+      `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab/⇧+tab switch · enter edit · ctrl+d del · esc close")}`,
+      innerW - 2, "",
+    ) + bc + " │" + rst);
+
+    // Tab bar (inside frame)
+    lines.push(bc + "│ " + rst + this.renderTabBar(innerW - 2) + bc + " │" + rst);
+
+    // Separator
+    lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
     // Search (inside frame)
     for (const sl of this.search.render(innerW)) {
-      lines.push(bc + "│" + this.pad(sl, innerW) + "│");
+      lines.push(bc + "│" + rst + this.pad(sl, innerW) + bc + "│" + rst);
     }
 
     // Separator
-    lines.push(bc + "├" + "─".repeat(w - 2) + "┤");
+    lines.push(bc + "├" + "─".repeat(w - 2) + "┤" + rst);
 
     // Entries
     const entries = this.tabEntries[this.activeTab];
     if (!this.filtered.length) {
-      lines.push(bc + "│" + this.pad(t.fg("dim", `  No entries in ${this.tabs[this.activeTab].label}.`), innerW) + "│");
+      lines.push(bc + "│" + rst + this.pad(t.fg("dim", `  No entries in ${this.tabs[this.activeTab].label}.`), innerW) + bc + "│" + rst);
     } else {
       const maxR = this.maxVis;
       const start = Math.max(0, Math.min(this.sel - Math.floor(maxR / 2), this.filtered.length - maxR));
@@ -112,15 +118,15 @@ export class MemoryList {
         const d = decodeEntry(entries[ei]);
         const cur = fi === this.sel ? "> " : "  ";
         const raw = `${cur}${t.fg("dim", `[${d.created}]`)} ${fi === this.sel ? t.bold(d.text) : d.text}`;
-        lines.push(bc + "│ " + truncateToWidth(raw, innerW - 2, "…") + " │");
+        lines.push(bc + "│ " + rst + truncateToWidth(raw, innerW - 2, "…") + bc + " │" + rst);
       }
       if (start > 0 || end < this.filtered.length) {
-        lines.push(bc + "│" + this.pad(t.fg("dim", `  (${this.sel + 1}/${this.filtered.length})`), innerW) + "│");
+        lines.push(bc + "│" + rst + this.pad(t.fg("dim", `  (${this.sel + 1}/${this.filtered.length})`), innerW) + bc + "│" + rst);
       }
     }
 
     // Frame bottom
-    lines.push(bc + "└" + "─".repeat(w - 2) + "┘");
+    lines.push(bc + "└" + "─".repeat(w - 2) + "┘" + rst);
     return lines;
   }
 
