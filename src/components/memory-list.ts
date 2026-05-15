@@ -1,6 +1,6 @@
 /**
  * MemoryList — табовый TUI для просмотра/редактирования памяти.
- * Табы: Memory User | Memory Project | Failures User | Failures Project
+ * Табы: Memory | Project | Failures | Proj. Failures
  * Tab/Shift+Tab — переключение. Enter — edit, Ctrl+D — delete, Esc — close.
  */
 
@@ -26,6 +26,8 @@ interface TabDef {
   target: Target;
 }
 
+const PAD = 1; // horizontal padding inside frame
+
 export class MemoryList {
   private t: Opts["theme"]; private ui: Opts["ui"]; private onClose: () => void;
   private tabs: TabDef[] = [];
@@ -40,7 +42,6 @@ export class MemoryList {
     this.t = o.theme; this.ui = o.ui; this.onClose = o.onClose;
     this.search = new Input();
 
-    // Build tabs — project tabs only if projectStore exists
     this.tabs.push({ label: "Memory", shortLabel: "Mem", store: o.store, target: "memory" });
     if (o.projectStore) this.tabs.push({ label: `Project: ${o.projectName}`, shortLabel: "Proj", store: o.projectStore, target: "memory" });
     this.tabs.push({ label: "Failures", shortLabel: "Fail", store: o.store, target: "failure" });
@@ -77,32 +78,49 @@ export class MemoryList {
   render(w: number): string[] {
     const t = this.t; const lines: string[] = [];
     const total = this.totalCount();
+    const bc = t.fg("border", ""); // border color prefix
+
+    // Header (outside frame)
     lines.push(truncateToWidth(
-      `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab switch · enter edit · ctrl+d del · esc close")}`,
+      `${t.bold("Memory")}  ${t.fg("dim", `(${total})`)}  ${t.fg("dim", "tab/⇧+tab switch · enter edit · ctrl+d del · esc close")}`,
       w, "",
     ));
     lines.push(this.renderTabBar(w));
-    lines.push(...this.search.render(w));
-    lines.push("");
 
+    // Frame top
+    const innerW = w - 2; // subtract │ borders
+    lines.push(bc + "┌" + "─".repeat(w - 2) + "┐");
+
+    // Search (inside frame)
+    for (const sl of this.search.render(innerW)) {
+      lines.push(bc + "│" + this.pad(sl, innerW) + "│");
+    }
+
+    // Separator
+    lines.push(bc + "├" + "─".repeat(w - 2) + "┤");
+
+    // Entries
     const entries = this.tabEntries[this.activeTab];
     if (!this.filtered.length) {
-      lines.push(t.fg("dim", `  No entries in ${this.tabs[this.activeTab].label}.`));
-      return lines;
+      lines.push(bc + "│" + this.pad(t.fg("dim", `  No entries in ${this.tabs[this.activeTab].label}.`), innerW) + "│");
+    } else {
+      const maxR = this.maxVis;
+      const start = Math.max(0, Math.min(this.sel - Math.floor(maxR / 2), this.filtered.length - maxR));
+      const end = Math.min(start + maxR, this.filtered.length);
+      for (let fi = start; fi < end; fi++) {
+        const ei = this.filtered[fi];
+        const d = decodeEntry(entries[ei]);
+        const cur = fi === this.sel ? "> " : "  ";
+        const raw = `${cur}${t.fg("dim", `[${d.created}]`)} ${fi === this.sel ? t.bold(d.text) : d.text}`;
+        lines.push(bc + "│ " + truncateToWidth(raw, innerW - PAD, "…") + " │");
+      }
+      if (start > 0 || end < this.filtered.length) {
+        lines.push(bc + "│" + this.pad(t.fg("dim", `  (${this.sel + 1}/${this.filtered.length})`), innerW) + "│");
+      }
     }
 
-    const maxR = this.maxVis;
-    const start = Math.max(0, Math.min(this.sel - Math.floor(maxR / 2), this.filtered.length - maxR));
-    const end = Math.min(start + maxR, this.filtered.length);
-
-    for (let fi = start; fi < end; fi++) {
-      const ei = this.filtered[fi];
-      const d = decodeEntry(entries[ei]);
-      const cur = fi === this.sel ? "> " : "  ";
-      lines.push(truncateToWidth(`${cur}${t.fg("dim", `[${d.created}]`)} ${fi === this.sel ? t.bold(d.text) : d.text}`, w, "…"));
-    }
-
-    if (start > 0 || end < this.filtered.length) lines.push(t.fg("dim", `  (${this.sel + 1}/${this.filtered.length})`));
+    // Frame bottom
+    lines.push(bc + "└" + "─".repeat(w - 2) + "┘");
     return lines;
   }
 
@@ -118,10 +136,17 @@ export class MemoryList {
     return truncateToWidth(parts.join(t.fg("dim", " │ ")), w, "");
   }
 
+  /** Pad line to exact width with spaces (ANSI-safe: counts visible chars). */
+  private pad(line: string, width: number): string {
+    // Remove ANSI escapes to measure visible length
+    const visible = line.replace(/\x1b\[[0-9;]*m/g, "");
+    const pad = Math.max(0, width - visible.length);
+    return line + " ".repeat(pad);
+  }
+
   // ─── Input ───
 
   async handleInput(data: string): Promise<void> {
-    // Tab navigation
     if (matchesKey(data, Key.tab)) {
       this.activeTab = (this.activeTab + 1) % this.tabs.length;
       this.sel = 0; this.refreshActiveTab(); return;
@@ -131,16 +156,13 @@ export class MemoryList {
       this.sel = 0; this.refreshActiveTab(); return;
     }
 
-    // Cursor
     if (matchesKey(data, Key.up)) { if (this.sel > 0) this.sel--; return; }
     if (matchesKey(data, Key.down)) { if (this.sel < this.filtered.length - 1) this.sel++; return; }
     if (matchesKey(data, Key.pageUp)) { this.sel = Math.max(0, this.sel - this.maxVis); return; }
     if (matchesKey(data, Key.pageDown)) { this.sel = Math.min(this.filtered.length - 1, this.sel + this.maxVis); return; }
 
-    // Close
     if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c"))) { this.onClose(); return; }
 
-    // Delete
     if (matchesKey(data, Key.ctrl("d")) && this.filtered.length) {
       const tab = this.tabs[this.activeTab];
       const ei = this.filtered[this.sel];
@@ -148,7 +170,6 @@ export class MemoryList {
       this.refreshActiveTab(); this.ui.notify("🗑 Entry deleted", "info"); return;
     }
 
-    // Edit
     if (matchesKey(data, Key.return) && this.filtered.length) {
       const tab = this.tabs[this.activeTab];
       const ei = this.filtered[this.sel];
@@ -161,7 +182,6 @@ export class MemoryList {
       return;
     }
 
-    // Search
     this.search.handleInput(data); this.doFilter();
   }
 
@@ -177,7 +197,6 @@ export class MemoryList {
       const hits = fuzzyFilter(entries.map((e, i) => ({ text: stripMetadata(e), index: i })), q, (x) => x.text);
       this.filtered = hits.map((h) => h.index);
     }
-    // Try to keep cursor near previous position
     if (prevIdx >= 0) { const ni = this.filtered.indexOf(prevIdx); if (ni >= 0) { this.sel = ni; return; } }
     this.sel = 0;
   }
