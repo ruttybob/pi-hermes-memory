@@ -15,17 +15,28 @@ import { loadConfig } from "./config.js";
 import { buildPromptContext } from "./prompt-context.js";
 import { REVIEW_PROMPT } from "./constants.js";
 import { MemoryList } from "./components/memory-list.js";
+import { detectProject } from "./project.js";
 
 export default function (pi: ExtensionAPI) {
   const config = loadConfig();
   const store = new MemoryStore(config);
 
+  // Project-scoped memory
+  const project = detectProject(config.projectsMemoryDir);
+  const projectStore = project.memoryDir
+    ? new MemoryStore({ ...config, memoryCharLimit: config.projectCharLimit, memoryDir: project.memoryDir })
+    : null;
+  const projectName = project.name ?? "";
+
   // 1. Загрузка при старте
-  pi.on("session_start", async () => { await store.loadFromDisk(); });
+  pi.on("session_start", async () => {
+    await store.loadFromDisk();
+    if (projectStore) await projectStore.loadFromDisk();
+  });
 
   // 2. Инъекция в системный промпт
   pi.on("before_agent_start", async (event: any, _ctx: any) => {
-    const ctx = buildPromptContext(store);
+    const ctx = buildPromptContext(store, projectStore, projectName);
     pi.events?.emit("system-prompt:injection", { source: "pi-self-memory", label: "Memory Policy + Entries", charCount: ctx.length, preview: ctx.slice(0, 300), fullContent: ctx });
     return { systemPrompt: event.systemPrompt + "\n\n" + ctx };
   });
@@ -37,13 +48,14 @@ export default function (pi: ExtensionAPI) {
   registerConsolidateCommand(pi, store);
   setupCorrectionDetector(pi, store, config);
 
-  // 7. /memory — TUI просмотр/редактирование
+  // 7. /memory — TUI просмотр/редактирование (global + project)
   pi.registerCommand("memory", {
     description: "Browse and edit memory entries with TUI",
     handler: async (_args: any, ctx: any) => {
       await store.loadFromDisk();
+      if (projectStore) await projectStore.loadFromDisk();
       await ctx.ui.custom((tui: any, theme: any, keybindings: any, done: () => void) => {
-        const list = new MemoryList({ store, theme, ui: ctx.ui, onClose: () => done() });
+        const list = new MemoryList({ store, projectStore, projectName, theme, ui: ctx.ui, onClose: () => done() });
         return { render: (w: number) => list.render(w), invalidate: () => list.invalidate(), handleInput: (d: string) => { list.handleInput(d).catch(() => {}); } };
       });
     },
@@ -59,11 +71,14 @@ export default function (pi: ExtensionAPI) {
       const parts = collectMessageParts(entries);
       if (parts.length < 2) { ctx.ui.notify("Not enough conversation.", "info"); return; }
       const prompt = [REVIEW_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join("\n§\n") || "(empty)", "",
+        projectStore ? `--- Current Project Memory (${projectName}) ---\n${projectStore.getMemoryEntries().join("\n§\n") || "(empty)"}` : "",
         "--- Conversation to Review ---", parts.join("\n\n")].join("\n");
       try {
         const r = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 120000 });
-        if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) { await store.loadFromDisk(); ctx.ui.notify("✅ Memory reviewed.", "info"); }
-        else ctx.ui.notify("ℹ️ Nothing worth saving.", "info");
+        if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) {
+          await store.loadFromDisk(); if (projectStore) await projectStore.loadFromDisk();
+          ctx.ui.notify("✅ Memory reviewed.", "info");
+        } else ctx.ui.notify("ℹ️ Nothing worth saving.", "info");
       } catch { ctx.ui.notify("❌ Review failed.", "info"); }
     },
   });

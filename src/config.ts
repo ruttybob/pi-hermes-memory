@@ -6,7 +6,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { MemoryConfig, MemoryOverflowStrategy } from "./types.js";
-import { DEFAULT_MEMORY_CHAR_LIMIT, DEFAULT_NUDGE_INTERVAL, DEFAULT_FLUSH_MIN_TURNS, DEFAULT_NUDGE_TOOL_CALLS, DEFAULT_REVIEW_RECENT_MESSAGES, DEFAULT_FLUSH_RECENT_MESSAGES, DEFAULT_FAILURE_INJECTION_MAX_AGE_DAYS, DEFAULT_FAILURE_INJECTION_MAX_ENTRIES } from "./constants.js";
+import { DEFAULT_MEMORY_CHAR_LIMIT, DEFAULT_NUDGE_INTERVAL, DEFAULT_FLUSH_MIN_TURNS, DEFAULT_NUDGE_TOOL_CALLS, DEFAULT_REVIEW_RECENT_MESSAGES, DEFAULT_FLUSH_RECENT_MESSAGES, DEFAULT_FAILURE_INJECTION_MAX_AGE_DAYS, DEFAULT_FAILURE_INJECTION_MAX_ENTRIES, DEFAULT_PROJECTS_MEMORY_DIR, DEFAULT_PROJECT_CHAR_LIMIT } from "./constants.js";
 
 const STRATS: readonly MemoryOverflowStrategy[] = ["auto-consolidate", "reject", "fifo-evict"];
 const isStrat = (v: unknown): v is MemoryOverflowStrategy => typeof v === "string" && STRATS.includes(v as MemoryOverflowStrategy);
@@ -22,6 +22,7 @@ const DEF: MemoryConfig = {
   failureInjectionMaxAgeDays: DEFAULT_FAILURE_INJECTION_MAX_AGE_DAYS,
   failureInjectionMaxEntries: DEFAULT_FAILURE_INJECTION_MAX_ENTRIES,
   nudgeToolCalls: DEFAULT_NUDGE_TOOL_CALLS,
+  projectsMemoryDir: DEFAULT_PROJECTS_MEMORY_DIR, projectCharLimit: DEFAULT_PROJECT_CHAR_LIMIT,
 };
 
 export const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".pi", "agent", "self-memory-config.json");
@@ -49,6 +50,8 @@ export function loadConfig(p = DEFAULT_CONFIG_PATH): MemoryConfig {
     if (typeof o.failureInjectionMaxAgeDays === "number") c.failureInjectionMaxAgeDays = o.failureInjectionMaxAgeDays;
     if (typeof o.failureInjectionMaxEntries === "number") c.failureInjectionMaxEntries = o.failureInjectionMaxEntries;
     if (typeof o.nudgeToolCalls === "number") c.nudgeToolCalls = o.nudgeToolCalls;
+    if (typeof o.projectsMemoryDir === "string") c.projectsMemoryDir = o.projectsMemoryDir;
+    if (typeof o.projectCharLimit === "number") c.projectCharLimit = o.projectCharLimit;
     if (typeof o.memoryDir === "string") c.memoryDir = o.memoryDir;
     if (isStrat(o.memoryOverflowStrategy)) { c.autoConsolidate = c.memoryOverflowStrategy === "auto-consolidate"; }
     else if (typeof o.autoConsolidate === "boolean") { c.autoConsolidate = o.autoConsolidate; c.memoryOverflowStrategy = c.autoConsolidate ? "auto-consolidate" : "reject"; }

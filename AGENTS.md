@@ -14,6 +14,8 @@ Pi extension — persistent memory with background collection, auto-consolidatio
 |---|---|
 | `~/.pi/agent/memory/MEMORY.md` | Global declarative memory |
 | `~/.pi/agent/memory/failures.md` | Global categorized failure memories |
+| `~/.pi/agent/projects-memory/<name>/MEMORY.md` | Project-scoped memory (per cwd basename) |
+| `~/.pi/agent/projects-memory/<name>/failures.md` | Project-scoped failures |
 
 ## Entry point & wiring
 
@@ -25,6 +27,7 @@ Pi extension — persistent memory with background collection, auto-consolidatio
 |---|---|
 | Memory CRUD, persistence, overflow | `src/store/memory-store.ts` |
 | Content security scanning | `src/store/content-scanner.ts` |
+| Project detection | `src/project.ts` |
 | Config loading, defaults | `src/config.ts` |
 | System prompt construction | `src/prompt-context.ts` |
 | Prompts, constants, correction patterns | `src/constants.ts` |
@@ -45,7 +48,7 @@ Pi extension — persistent memory with background collection, auto-consolidatio
 
 ## Commands
 
-- `/memory` — TUI: browse, edit (Enter), delete (Ctrl+D), search entries
+- `/memory` — TUI: browse, edit (Enter), delete (Ctrl+D), search entries (global + project sections)
 - `/memory-consolidate` — trigger consolidation to free space
 - `/memory-review` — manually review current conversation
 

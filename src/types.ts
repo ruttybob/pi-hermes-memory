@@ -27,6 +27,8 @@ export interface MemoryConfig {
   failureInjectionMaxAgeDays: number;
   failureInjectionMaxEntries: number;
   nudgeToolCalls: number;
+  projectsMemoryDir: string;
+  projectCharLimit: number;
 }
 
 export type MemoryCategory = "failure" | "correction" | "insight" | "preference" | "convention" | "tool-quirk";

@@ -112,6 +112,16 @@ export class MemoryStore {
     return parts.join("\n\n");
   }
 
+  formatProjectBlock(projectName: string): string {
+    const entries = this.mem.map(strip);
+    if (!entries.length) return "";
+    const limit = this.config.memoryCharLimit;
+    const content = entries.join(ENTRY_DELIMITER); const c = content.length;
+    const pct = limit > 0 ? Math.min(100, Math.floor((c / limit) * 100)) : 0;
+    const block = `${"═".repeat(46)}\nPROJECT MEMORY: ${projectName} [${pct}% — ${c}/${limit} chars]\n${"═".repeat(46)}\n${content}`;
+    return this.fence(block);
+  }
+
   // ─── Internal ───
 
   private async _add(t: Target, content: string, signal?: AbortSignal, retries = 1): Promise<MemoryResult> {
