@@ -7,17 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `skillsEnabled` config option (default `true`) — disables skill tool, commands, auto-trigger, prompt injection, and review prompt paragraph when `false`
-- `system-prompt:injection` event emit для viewers (look-system-prompt и подобных)
-
 ### Changed
 
-- Skills storage path changed from `~/.pi/agent/memory/skills/` to `<cwd>/.pi/skills/` — skills are now project-scoped
-- Renamed project from `pi-hermes-memory` to `pi-self-memory` across all files (package.json, docs, config, tests)
+- **Radical simplification**: removed skill infrastructure, manual CRUD tool, legacy modules. Total src/ reduced from 2310 → 845 lines (63% reduction)
+- All imports updated from `@mariozechner` to `@earendil-works` package scope
+- Memory store simplified: single store (no project scope), all writes through background review, corrections, and consolidation
+- `system-prompt:injection` event emit для viewers
+
+### Added
+
+- `/memory` command with TUI MemoryList component (cursor navigation, Ctrl+D delete, Enter edit via `ctx.ui.editor()`, fuzzy search)
+- `/memory-review` command for manual review trigger
 
 ### Removed
+
+- Skill tool/store/handlers/commands (skill-store, skill-tool, skill-auto-trigger, skill-extract, skills-command)
+- Manual memory CRUD tool (`memory` tool)
+- `learn-memory` handler (static documentation)
+- `preview-context` command (debug-only)
+- `insights` command
+- `project.ts` (project-scoped memory)
+- Legacy inject mode, custom/compact policy styles
+
 
 - Дублирование `<available-memory-tools>` в системном промпте — Pi сам рендерит описание зарегистрированных инструментов
 

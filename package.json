@@ -1,7 +1,7 @@
 {
   "name": "pi-self-memory",
   "version": "0.8.0",
-  "description": "🧠 Persistent memory for Pi — Markdown-based, token-aware policy-only memory by default, auto-consolidation, procedural skills, correction detection.",
+  "description": "🧠 Persistent memory for Pi — Markdown-based, auto-consolidation, correction detection, TUI editor.",
   "type": "module",
   "main": "src/index.ts",
   "files": [
@@ -25,15 +25,10 @@
     "pi-extension",
     "memory",
     "persistent-memory",
-    "skills",
-    "learning-loop",
-    "agent",
     "self-memory",
-    "secret-scanning",
     "content-scanner",
     "correction-detection",
     "auto-consolidation",
-    "memory-aging",
     "context-fencing"
   ],
   "license": "MIT",
@@ -42,11 +37,12 @@
     "url": "https://github.com/ruttybob/pi-self-memory"
   },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": ">=0.70.0"
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
   },
   "devDependencies": {
-    "@mariozechner/pi-ai": "^0.70.0",
-    "@mariozechner/pi-coding-agent": "^0.70.0",
+    "@earendil-works/pi-ai": "^0.74.0",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@types/node": "^25.8.0",
     "husky": "^9.1.7",
     "tsx": "^4.21.0",
     "typebox": "^1.1.33",

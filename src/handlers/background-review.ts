@@ -1,139 +1,37 @@
 /**
- * Background review — learning loop that auto-saves memory every N turns.
- * Ported from hermes-agent/run_agent.py.
- * See PLAN.md → "Hermes Source File Reference Map" for source lines.
- *
- * Uses pi.exec("pi", ["-p", ...]) for isolated one-shot review,
- * keeping us within Pi's intended extension API.
+ * Background review — авто-сохранение памяти каждые N ходов через pi.exec().
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { MemoryStore } from "../store/memory-store.js";
-import { buildReviewPrompt } from "../constants.js";
+import { REVIEW_PROMPT } from "../constants.js";
 import type { MemoryConfig } from "../types.js";
 import { applyRecentMessageLimit, collectMessageParts } from "./message-parts.js";
 
-export function setupBackgroundReview(
-  pi: ExtensionAPI,
-  store: MemoryStore,
-  projectStore: MemoryStore | null,
-  config: MemoryConfig,
-): void {
-  let turnsSinceReview = 0;
-  let toolCallsSinceReview = 0;
-  let userTurnCount = 0;
-  let reviewInProgress = false;
+export function setupBackgroundReview(pi: ExtensionAPI, store: MemoryStore, config: MemoryConfig): void {
+  let turns = 0, toolCalls = 0, userTurns = 0, busy = false;
 
-  pi.on("message_end", async (event, _ctx) => {
-    if (event.message.role === "user") {
-      userTurnCount++;
-    }
-  });
-
+  pi.on("message_end", async (e) => { if (e.message.role === "user") userTurns++; });
   pi.on("turn_end", async (event, ctx) => {
-    turnsSinceReview++;
-
-    if (!config.reviewEnabled) return;
-    if (reviewInProgress) return;
-
-    // Count tool calls from this turn's message only (not cumulative branch scan —
-    // otherwise the counter resets to 0 at review, then immediately re-counts all
-    // historical tool calls and re-triggers on every subsequent turn).
+    turns++;
+    if (!config.reviewEnabled || busy) return;
     try {
-      const msg = event.message;
-      if (msg?.role === "assistant") {
-        const content = msg?.content;
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (block && typeof block === "object" && block.type === "toolCall") {
-              toolCallsSinceReview++;
-            }
-          }
-        }
-      }
-    } catch {
-      // If we can't count tool calls, fall back to turn-based only
-    }
+      const c = (event.message as any)?.content;
+      if (Array.isArray(c)) for (const b of c) if (b?.type === "toolCall") toolCalls++;
+    } catch { /* */ }
+    if (!(turns >= config.nudgeInterval) && !(toolCalls >= config.nudgeToolCalls)) return;
+    if (userTurns < 3) return;
+    turns = 0; toolCalls = 0; busy = true;
 
-    // Trigger on EITHER turn count OR tool call count
-    const turnThresholdMet = turnsSinceReview >= config.nudgeInterval;
-    const toolCallThresholdMet = toolCallsSinceReview >= config.nudgeToolCalls;
+    let parts: string[];
+    try { parts = collectMessageParts(ctx.sessionManager.getBranch()); } catch { busy = false; return; }
+    if (parts.length < 4) { busy = false; return; }
 
-    if (!turnThresholdMet && !toolCallThresholdMet) return;
-    if (userTurnCount < 3) return;
+    const prompt = [REVIEW_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join("\n§\n") || "(empty)", "",
+      "--- Conversation to Review ---", applyRecentMessageLimit(parts, config.reviewRecentMessages).join("\n\n")].join("\n");
 
-    turnsSinceReview = 0;
-    toolCallsSinceReview = 0;
-    reviewInProgress = true;
-
-    // Build conversation snapshot from session entries (crash-safe)
-    let allParts: string[] = [];
-    try {
-      const entries = ctx.sessionManager.getBranch();
-      allParts = collectMessageParts(entries);
-    } catch {
-      reviewInProgress = false;
-      return; // Session expired or empty — nothing to review
-    }
-    if (allParts.length < 4) {
-      reviewInProgress = false;
-      return; // Not enough conversation to review
-    }
-    const parts = applyRecentMessageLimit(allParts, config.reviewRecentMessages);
-
-    const currentMemory = store.getMemoryEntries().join("\n§\n");
-    const currentProject = projectStore ? projectStore.getMemoryEntries().join("\n§\n") : null;
-
-    const reviewPrompt = [
-      buildReviewPrompt(config.skillsEnabled !== false),
-      "",
-      "--- Current Memory ---",
-      currentMemory || "(empty)",
-    ];
-
-    if (currentProject !== null) {
-      reviewPrompt.push(
-        "",
-        "--- Current Project Memory ---",
-        currentProject || "(empty)",
-      );
-    }
-
-    reviewPrompt.push(
-      "",
-      "--- Conversation to Review ---",
-      parts.join("\n\n"),
-    );
-
-    // Fire-and-forget: do NOT await. The review runs in a subprocess;
-    // blocking turn_end would freeze the interactive chat.
-    // Notifications are delivered via .then() once the subprocess completes.
-    //
-    // We intentionally omit ctx.signal — the signal is tied to the turn
-    // lifetime and would abort the subprocess before it finishes now that
-    // we're not awaiting. The timeout (120s) provides its own safety net.
-    const reviewPromise = pi.exec("pi", ["-p", "--no-session", reviewPrompt.join("\n")], {
-      signal: undefined,
-      timeout: 120000,
-    });
-
-    reviewPromise
-      .then((result) => {
-        reviewInProgress = false;
-        if (result.code === 0 && result.stdout) {
-          const output = result.stdout.trim();
-          if (output && !output.toLowerCase().includes("nothing to save")) {
-            ctx.ui.notify("💾 Memory auto-reviewed and updated", "info");
-          }
-        }
-        // Auto-review is best-effort. Non-zero exits are silently skipped —
-        // common on Windows where pi CLI may resolve differently. The next
-        // review cycle will retry.
-      })
-      .catch(() => {
-        // Best-effort: subprocess failures (timeout, signal, spawn errors)
-        // are silently ignored. The next review cycle will retry.
-        reviewInProgress = false;
-      });
+    pi.exec("pi", ["-p", "--no-session", prompt], { signal: undefined, timeout: 120000 })
+      .then((r) => { busy = false; if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) ctx.ui.notify("💾 Memory auto-reviewed and updated", "info"); })
+      .catch(() => { busy = false; });
   });
 }

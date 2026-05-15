@@ -1,11 +1,11 @@
 # Pi Self Memory
 
-Pi extension — persistent memory, procedural skills, and a background learning loop.
+Pi extension — persistent memory with background collection, auto-consolidation, correction detection, and a TUI editor.
 
 ## Architecture
 
 - **Language**: TypeScript (loaded via jiti, no build step at runtime)
-- **Runtime**: Pi extension API (`@mariozechner/pi-coding-agent`)
+- **Runtime**: Pi extension API (`@earendil-works/pi-coding-agent`)
 - **Config**: `~/.pi/agent/self-memory-config.json` — all fields optional with defaults
 
 ### Storage layout
@@ -13,32 +13,41 @@ Pi extension — persistent memory, procedural skills, and a background learning
 | Path | Scope |
 |---|---|
 | `~/.pi/agent/memory/MEMORY.md` | Global declarative memory |
-| `~/.pi/agent/memory/FAILURES.md` | Global categorized failure memories |
-| `~/.pi/agent/<projectsMemoryDir>/<name>/MEMORY.md` | Project-scoped memory |
-| `<cwd>/.pi/skills/<slug>.md` | Procedural skills (project-scoped) |
+| `~/.pi/agent/memory/failures.md` | Global categorized failure memories |
 
 ## Entry point & wiring
 
-`src/index.ts` — registers tools, event handlers, commands. All skill registrations are gated by `config.skillsEnabled`.
+`src/index.ts` — event handlers + 3 commands (`/memory`, `/memory-consolidate`, `/memory-review`).
 
 ## Key modules
 
 | If touching | Read first |
 |---|---|
 | Memory CRUD, persistence, overflow | `src/store/memory-store.ts` |
-| Skill CRUD, frontmatter, progressive disclosure | `src/store/skill-store.ts` |
-| Config loading, defaults, validation | `src/config.ts` |
-| System prompt construction (policy/legacy) | `src/prompt-context.ts` |
-| Background review prompt assembly | `src/constants.ts` → `buildReviewPrompt()` |
 | Content security scanning | `src/store/content-scanner.ts` |
+| Config loading, defaults | `src/config.ts` |
+| System prompt construction | `src/prompt-context.ts` |
+| Prompts, constants, correction patterns | `src/constants.ts` |
+| TUI MemoryList component | `src/components/memory-list.ts` |
+| Background review | `src/handlers/background-review.ts` |
+| Correction detection | `src/handlers/correction-detector.ts` |
+| Auto-consolidation | `src/handlers/auto-consolidate.ts` |
+| Session flush | `src/handlers/session-flush.ts` |
 
 ## Design invariants
 
 - **Frozen snapshot** — memory injected once at session start, never mutated mid-session (Pi prompt caching)
-- **Atomic writes** — temp file + `fs.rename()` in both stores
+- **Atomic writes** — temp file + `fs.rename()`
 - **`§` delimiter** — separates entries in MEMORY.md
 - **No SQLite** — all storage is Markdown files
-- **`pi.exec()` for subprocess work** — background review and skill extraction run in isolated subprocesses
+- **`pi.exec()` for subprocess work** — background review and consolidation run in isolated subprocesses
+- **No manual CRUD tool** — all writes through background review, corrections, and consolidation
+
+## Commands
+
+- `/memory` — TUI: browse, edit (Enter), delete (Ctrl+D), search entries
+- `/memory-consolidate` — trigger consolidation to free space
+- `/memory-review` — manually review current conversation
 
 ## Development
 
@@ -50,11 +59,5 @@ pi -e ./src/index.ts  # test locally
 ## Installation
 
 ```bash
-pi install github:chandra447/pi-self-memory
+pi install github:ruttybob/pi-self-memory
 ```
-
-## Docs
-
-- `docs/ROADMAP.md` — full roadmap and competitive analysis
-- `docs/0.2/TASKS.md` — current task tracking
-- `PLAN.md` — v0.1 implementation plan with Hermes source reference map

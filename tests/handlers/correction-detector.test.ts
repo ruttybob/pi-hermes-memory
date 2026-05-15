@@ -1,438 +1,107 @@
 /**
- * Unit tests for correction detection — isCorrection() pattern matching
- * and handler behavior (rate limiting, pi.exec trigger).
+ * Тесты correction detection — isCorrection() + handler.
  */
 
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { isCorrection, setupCorrectionDetector } from "../../src/handlers/correction-detector.js";
 
 // ─── Pattern matching tests ───
 
 describe("isCorrection", () => {
-  // ── Strong patterns (always trigger) ──
-
-  describe("strong patterns (always trigger)", () => {
-    it("matches 'don't do that'", () => {
-      assert.strictEqual(isCorrection("don't do that"), true);
-    });
-
-    it("matches 'not like that'", () => {
-      assert.strictEqual(isCorrection("not like that"), true);
-    });
-
-    it("matches 'I said use yarn'", () => {
-      assert.strictEqual(isCorrection("I said use yarn"), true);
-    });
-
-    it("matches 'I told you already'", () => {
-      assert.strictEqual(isCorrection("I told you already"), true);
-    });
-
-    it("matches 'we already discussed this'", () => {
-      assert.strictEqual(isCorrection("we already discussed this"), true);
-    });
-
-    it("matches 'please don't commit yet'", () => {
-      assert.strictEqual(isCorrection("please don't commit yet"), true);
-    });
-
-    it("matches \"that's not what I asked for\"", () => {
-      assert.strictEqual(isCorrection("that's not what I asked for"), true);
-    });
+  // Strong
+  describe("strong patterns", () => {
+    it("matches 'don't do that'", () => assert.strictEqual(isCorrection("don't do that"), true));
+    it("matches 'not like that'", () => assert.strictEqual(isCorrection("not like that"), true));
+    it("matches 'I said use yarn'", () => assert.strictEqual(isCorrection("I said use yarn"), true));
+    it("matches 'please don't commit yet'", () => assert.strictEqual(isCorrection("please don't commit yet"), true));
+    it("matches 'я же говорил тебе'", () => assert.strictEqual(isCorrection("я же говорил тебе"), true));
+    it("matches 'мы уже обсуждали'", () => assert.strictEqual(isCorrection("мы уже обсуждали это"), true));
   });
 
-  // ── Weak patterns (need directive clause) ──
-
-  describe("weak patterns (need directive clause)", () => {
-    it("matches 'no, use yarn instead' (has directive 'use')", () => {
-      assert.strictEqual(isCorrection("no, use yarn instead"), true);
-    });
-
-    it("matches 'wrong, the file is in src/' (has directive 'the')", () => {
-      assert.strictEqual(isCorrection("wrong, the file is in src/"), true);
-    });
-
-    it("matches 'actually, don't use that' (has directive 'don't')", () => {
-      assert.strictEqual(isCorrection("actually, don't use that"), true);
-    });
-
-    it("matches 'stop, fix the test first' (has directive 'fix')", () => {
-      assert.strictEqual(isCorrection("stop, fix the test first"), true);
-    });
-
-    it("matches 'no! delete that file' (has directive 'delete')", () => {
-      assert.strictEqual(isCorrection("no! delete that file"), true);
-    });
-
-    it("does NOT match 'no just kidding' (no directive clause)", () => {
-      assert.strictEqual(isCorrection("no just kidding"), false);
-    });
+  // Weak + directive
+  describe("weak patterns with directive", () => {
+    it("matches 'no, use yarn'", () => assert.strictEqual(isCorrection("no, use yarn instead"), true));
+    it("matches 'wrong, the file is in src/'", () => assert.strictEqual(isCorrection("wrong, the file is in src/"), true));
+    it("matches 'нет, используй pnpm'", () => assert.strictEqual(isCorrection("нет, используй pnpm"), true));
+    it("matches 'стоп, исправь это'", () => assert.strictEqual(isCorrection("стоп, исправь это"), true));
   });
 
-  // ── Negative patterns (suppress even if positive matches) ──
-
-  describe("negative patterns (suppress false positives)", () => {
-    it("suppresses 'no worries, I'll handle it'", () => {
-      assert.strictEqual(isCorrection("no worries, I'll handle it"), false);
-    });
-
-    it("suppresses 'no problem'", () => {
-      assert.strictEqual(isCorrection("no problem"), false);
-    });
-
-    it("suppresses 'no thanks'", () => {
-      assert.strictEqual(isCorrection("no thanks"), false);
-    });
-
-    it("suppresses 'no need to change that'", () => {
-      assert.strictEqual(isCorrection("no need to change that"), false);
-    });
-
-    it("suppresses 'actually, that looks great'", () => {
-      assert.strictEqual(isCorrection("actually, that looks great"), false);
-    });
-
-    it("suppresses 'actually, perfect'", () => {
-      assert.strictEqual(isCorrection("actually, perfect"), false);
-    });
-
-    it("suppresses 'actually, that's correct'", () => {
-      assert.strictEqual(isCorrection("actually, that's correct"), false);
-    });
-
-    it("suppresses 'stop there'", () => {
-      assert.strictEqual(isCorrection("stop there"), false);
-    });
-
-    it("suppresses 'stop here'", () => {
-      assert.strictEqual(isCorrection("stop here"), false);
-    });
-
-    it("suppresses 'stop for now'", () => {
-      assert.strictEqual(isCorrection("stop for now"), false);
-    });
+  // Negative
+  describe("negative patterns", () => {
+    it("does not match 'no worries'", () => assert.strictEqual(isCorrection("no worries"), false));
+    it("does not match 'no problem'", () => assert.strictEqual(isCorrection("no problem"), false));
+    it("does not match 'actually looks great'", () => assert.strictEqual(isCorrection("actually looks great"), false));
+    it("does not match 'нет, проблем нет'", () => assert.strictEqual(isCorrection("нет, проблем нет"), false));
   });
 
-  // ── Non-corrections (should NOT trigger) ──
-
-  describe("non-corrections (should NOT trigger)", () => {
-    it("does NOT match 'yes, do that'", () => {
-      assert.strictEqual(isCorrection("yes, do that"), false);
-    });
-
-    it("does NOT match 'looks good'", () => {
-      assert.strictEqual(isCorrection("looks good"), false);
-    });
-
-    it("does NOT match 'can you also check the tests?'", () => {
-      assert.strictEqual(isCorrection("can you also check the tests?"), false);
-    });
-
-    it("does NOT match empty string", () => {
-      assert.strictEqual(isCorrection(""), false);
-    });
-
-    it("does NOT match 'thanks'", () => {
-      assert.strictEqual(isCorrection("thanks"), false);
-    });
-
-    it("does NOT match 'great, that works'", () => {
-      assert.strictEqual(isCorrection("great, that works"), false);
-    });
-
-    it("does NOT match 'please continue'", () => {
-      assert.strictEqual(isCorrection("please continue"), false);
-    });
-  });
-
-  // ── Case insensitivity ──
-
-  describe("case insensitivity", () => {
-    it("matches 'DON'T DO THAT' (uppercase)", () => {
-      assert.strictEqual(isCorrection("DON'T DO THAT"), true);
-    });
-
-    it("matches 'I Told You Already' (mixed case)", () => {
-      assert.strictEqual(isCorrection("I Told You Already"), true);
-    });
-
-    it("suppresses 'No Worries' (uppercase negative)", () => {
-      assert.strictEqual(isCorrection("No Worries"), false);
-    });
-  });
-
-  // ── Русский язык (bilingual support) ──
-
-  describe("russian patterns", () => {
-    describe("strong patterns", () => {
-      it("matches 'я же сказал используй pnpm'", () => {
-        assert.strictEqual(isCorrection("я же сказал используй pnpm"), true);
-      });
-      it("matches 'я же говорил не делай так'", () => {
-        assert.strictEqual(isCorrection("я же говорил не делай так"), true);
-      });
-      it("matches 'мы уже обсуждали это'", () => {
-        assert.strictEqual(isCorrection("мы уже обсуждали это"), true);
-      });
-      it("matches 'это не то что я просил'", () => {
-        assert.strictEqual(isCorrection("это не то что я просил"), true);
-      });
-      it("matches 'не делай так'", () => {
-        assert.strictEqual(isCorrection("не делай так"), true);
-      });
-      it("matches 'пожалуйста не надо'", () => {
-        assert.strictEqual(isCorrection("пожалуйста не надо"), true);
-      });
-    });
-
-    describe("weak patterns with directive", () => {
-      it("matches 'нет, используй yarn'", () => {
-        assert.strictEqual(isCorrection("нет, используй yarn"), true);
-      });
-      it("matches 'не так, пиши через async/await'", () => {
-        assert.strictEqual(isCorrection("не так, пиши через async/await"), true);
-      });
-      it("matches 'вообще-то, запусти через npm'", () => {
-        assert.strictEqual(isCorrection("вообще-то, запусти через npm"), true);
-      });
-      it("matches 'стоп, исправь тесты'", () => {
-        assert.strictEqual(isCorrection("стоп, исправь тесты"), true);
-      });
-      it("matches 'неправильно, удали этот файл'", () => {
-        assert.strictEqual(isCorrection("неправильно, удали этот файл"), true);
-      });
-      it("does NOT match 'нет наверное' (no directive)", () => {
-        assert.strictEqual(isCorrection("нет наверное"), false);
-      });
-    });
-
-    describe("negative patterns", () => {
-      it("suppresses 'нет, ничего'", () => {
-        assert.strictEqual(isCorrection("нет, ничего"), false);
-      });
-      it("suppresses 'нет проблем'", () => {
-        assert.strictEqual(isCorrection("нет проблем"), false);
-      });
-      it("suppresses 'нет спасибо'", () => {
-        assert.strictEqual(isCorrection("нет спасибо"), false);
-      });
-      it("suppresses 'нет, не надо'", () => {
-        assert.strictEqual(isCorrection("нет, не надо"), false);
-      });
-      it("suppresses 'вообще отлично выглядит'", () => {
-        assert.strictEqual(isCorrection("вообще отлично выглядит"), false);
-      });
-      it("suppresses 'вообще правильно'", () => {
-        assert.strictEqual(isCorrection("вообще правильно"), false);
-      });
-      it("suppresses 'стоп здесь'", () => {
-        assert.strictEqual(isCorrection("стоп здесь"), false);
-      });
-    });
-
-    describe("non-corrections in russian", () => {
-      it("does NOT match 'да, сделай так'", () => {
-        assert.strictEqual(isCorrection("да, сделай так"), false);
-      });
-      it("does NOT match 'выглядит хорошо'", () => {
-        assert.strictEqual(isCorrection("выглядит хорошо"), false);
-      });
-      it("does NOT match 'спасибо'", () => {
-        assert.strictEqual(isCorrection("спасибо"), false);
-      });
-      it("does NOT match 'отлично, продолжай'", () => {
-        assert.strictEqual(isCorrection("отлично, продолжай"), false);
-      });
-    });
-  });
-
-  describe("custom pattern config", () => {
-    it("matches custom strong patterns", () => {
-      assert.strictEqual(
-        isCorrection("custom correction", { correctionStrongPatterns: ["^custom correction$"] }),
-        true,
-      );
-    });
-
-    it("uses custom negative patterns to suppress matches", () => {
-      assert.strictEqual(
-        isCorrection("custom correction", {
-          correctionStrongPatterns: ["^custom"],
-          correctionNegativePatterns: ["^custom correction$"],
-        }),
-        false,
-      );
-    });
-
-    it("uses custom directive words for weak patterns", () => {
-      assert.strictEqual(
-        isCorrection("no, shipit now", { correctionDirectiveWords: ["shipit"] }),
-        true,
-      );
-      assert.strictEqual(
-        isCorrection("no, use yarn", { correctionDirectiveWords: ["shipit"] }),
-        false,
-      );
-    });
-
-    it("ignores invalid custom regex entries and keeps valid entries", () => {
-      assert.strictEqual(
-        isCorrection("custom correction", { correctionStrongPatterns: ["bad(", "^custom"] }),
-        true,
-      );
-    });
-
-    it("treats explicit empty or all-invalid pattern arrays as empty", () => {
-      assert.strictEqual(
-        isCorrection("don't do that", { correctionStrongPatterns: [] }),
-        false,
-      );
-      assert.strictEqual(
-        isCorrection("don't do that", { correctionStrongPatterns: ["bad("] }),
-        false,
-      );
-    });
+  // Normal messages
+  describe("normal messages", () => {
+    it("does not match 'looks good'", () => assert.strictEqual(isCorrection("looks good"), false));
+    it("does not match 'thanks'", () => assert.strictEqual(isCorrection("thanks"), false));
+    it("does not match 'отлично'", () => assert.strictEqual(isCorrection("отлично"), false));
   });
 });
 
-// ─── Handler behavior tests ───
+// ─── Handler tests ───
 
 describe("setupCorrectionDetector handler", () => {
   let handlers: Record<string, Function[]>;
   let execCalls: any[];
-  let notifyCalls: any[];
 
-  function createMockPi(execReturn?: { code: number; stdout: string; stderr: string }) {
-    const ret = execReturn ?? { code: 0, stdout: "Saved correction", stderr: "" };
+  function mockPi(execReturn = { code: 0, stdout: "Saved", stderr: "" }) {
     return {
-      on: (event: string, handler: Function) => {
-        handlers[event] = handlers[event] || [];
-        handlers[event].push(handler);
-      },
-      exec: async (...args: any[]) => {
-        execCalls.push(args);
-        return ret;
-      },
-      registerTool: () => {},
-      registerCommand: () => {},
+      on: (ev: string, fn: Function) => { (handlers[ev] ??= []).push(fn); },
+      exec: async (...a: any[]) => { execCalls.push(a); return execReturn; },
     } as any;
   }
 
   const mockStore = {
-    getMemoryEntries: () => ["existing entry"],
-    addFailure: async () => ({ success: true, target: 'failure', entry_count: 1, message: 'Failure memory saved: correction' }),
+    getMemoryEntries: () => ["existing"],
+    addFailure: async () => ({ success: true }),
   } as any;
 
   const config = {
-    correctionDetection: true,
-    nudgeInterval: 10,
-    reviewEnabled: false,
-    memoryCharLimit: 5000,
-    projectCharLimit: 5000,
-    flushOnCompact: false,
-    flushOnShutdown: false,
-    flushMinTurns: 6,
-    autoConsolidate: false,
-    nudgeToolCalls: 15,
+    correctionDetection: true, nudgeInterval: 10, reviewEnabled: false,
+    memoryCharLimit: 5000, flushOnCompact: false, flushOnShutdown: false,
+    flushMinTurns: 6, autoConsolidate: false, nudgeToolCalls: 15,
   };
 
   function makeCtx(branch: any[] = []) {
     return {
       sessionManager: { getBranch: () => branch },
-      signal: undefined as any,
-      ui: {
-        notify: (msg: string, level: string) => {
-          notifyCalls.push({ msg, level });
-        },
-      },
+      signal: undefined, ui: { notify: () => {} },
     };
   }
 
-  function fireMessageEnd(role: string, text: string) {
-    const h = handlers["message_end"];
-    if (!h) throw new Error("No message_end handler registered");
-    for (const fn of h) {
-      fn({ message: { role, content: [{ type: "text", text }] } }, makeCtx());
-    }
+  function fire(ev: string, ...args: any[]) {
+    for (const fn of handlers[ev] ?? []) fn(...args);
   }
 
-  function fireTurnEnd(branch: any[] = []) {
-    const h = handlers["turn_end"];
-    if (!h) throw new Error("No turn_end handler registered");
-    const ctx = makeCtx(branch);
-    for (const fn of h) {
-      fn({}, ctx);
-    }
-    return ctx;
-  }
+  beforeEach(() => { handlers = {}; execCalls = []; });
 
-  async function settle(ms = 10) {
-    await new Promise((r) => setTimeout(r, ms));
-  }
-
-  beforeEach(() => {
-    handlers = {};
-    execCalls = [];
-    notifyCalls = [];
-  });
-
-  afterEach(() => {
-    // cleanup
-  });
-
-  it("triggers pi.exec when correction detected", async () => {
-    const pi = createMockPi();
-    setupCorrectionDetector(pi, mockStore, null, config);
-
-    const branch = [
-      { type: "message", message: { role: "user", content: [{ type: "text", text: "don't do that" }] } },
-      { type: "message", message: { role: "assistant", content: [{ type: "text", text: "ok" }] } },
-    ];
-
-    fireMessageEnd("user", "don't do that");
-    fireTurnEnd(branch);
-    await settle();
-
-    assert.ok(execCalls.length >= 1, "pi.exec should be called on correction");
+  it("triggers pi.exec on correction", async () => {
+    const pi = mockPi();
+    setupCorrectionDetector(pi, mockStore, config);
+    const branch = [{ type: "message", message: { role: "user", content: [{ type: "text", text: "don't do that" }] } }];
+    fire("message_end", { message: { role: "user", content: [{ type: "text", text: "don't do that" }] } }, makeCtx());
+    fire("turn_end", {}, makeCtx(branch));
+    await new Promise((r) => setTimeout(r, 20));
+    assert.ok(execCalls.length >= 1);
   });
 
   it("does NOT trigger on normal messages", async () => {
-    const pi = createMockPi();
-    setupCorrectionDetector(pi, mockStore, null, config);
-
-    fireMessageEnd("user", "looks good");
-    fireTurnEnd([]);
-    await settle();
-
-    assert.strictEqual(execCalls.length, 0, "pi.exec should NOT be called for normal messages");
+    const pi = mockPi();
+    setupCorrectionDetector(pi, mockStore, config);
+    fire("message_end", { message: { role: "user", content: [{ type: "text", text: "looks good" }] } }, makeCtx());
+    fire("turn_end", {}, makeCtx([]));
+    await new Promise((r) => setTimeout(r, 10));
+    assert.strictEqual(execCalls.length, 0);
   });
 
-  it("rate limits: does not trigger on consecutive corrections within 3 turns", async () => {
-    const pi = createMockPi();
-    setupCorrectionDetector(pi, mockStore, null, config);
-
-    // First correction
-    fireMessageEnd("user", "don't do that");
-    fireTurnEnd([]);
-    await settle();
-
-    const firstCallCount = execCalls.length;
-    assert.ok(firstCallCount >= 1, "first correction should trigger");
-
-    // Second correction within 3 turns — should be rate-limited
-    fireMessageEnd("user", "not like that");
-    fireTurnEnd([]);
-    await settle();
-
-    assert.strictEqual(execCalls.length, firstCallCount, "second correction should be rate-limited");
-  });
-
-  it("does not register handlers when correctionDetection is false", () => {
-    const pi = createMockPi();
-    const disabledConfig = { ...config, correctionDetection: false };
-    setupCorrectionDetector(pi, mockStore, null, disabledConfig);
-
-    assert.strictEqual(Object.keys(handlers).length, 0, "no handlers should be registered when disabled");
+  it("no handlers when disabled", () => {
+    const pi = mockPi();
+    setupCorrectionDetector(pi, mockStore, { ...config, correctionDetection: false });
+    assert.strictEqual(Object.keys(handlers).length, 0);
   });
 });

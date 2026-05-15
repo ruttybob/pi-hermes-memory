@@ -1,3 +1,7 @@
+/**
+ * Утилита для сбора текста сообщений из сессии.
+ */
+
 import { getMessageText } from "../types.js";
 
 export function applyRecentMessageLimit(parts: string[], recentMessages = 0): string[] {
