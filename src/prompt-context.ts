@@ -12,6 +12,8 @@ export function buildPromptContext(store: MemoryStore, projectStore: MemoryStore
   if (projectStore) {
     const pBlock = projectStore.formatProjectBlock(projectName);
     if (pBlock) parts.push(pBlock);
+    const pfBlock = projectStore.formatProjectFailuresBlock(projectName);
+    if (pfBlock) parts.push(pfBlock);
   }
   return parts.join("\n\n");
 }

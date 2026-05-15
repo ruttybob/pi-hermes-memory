@@ -135,6 +135,17 @@ export class MemoryStore {
     return this.fence(block);
   }
 
+  formatProjectFailuresBlock(projectName: string): string {
+    if (this.config.failureInjectionEnabled === false) return "";
+    const ma = this.config.failureInjectionMaxAgeDays ?? DEFAULT_FAILURE_INJECTION_MAX_AGE_DAYS;
+    const mx = this.config.failureInjectionMaxEntries ?? DEFAULT_FAILURE_INJECTION_MAX_ENTRIES;
+    const f = this.getFailureEntries(ma).slice(0, mx);
+    if (!f.length) return "";
+    return this.fence(
+      `${"═".repeat(46)}\nPROJECT FAILURES & LESSONS (${projectName})\n${"═".repeat(46)}\n` + f.map((e) => "• " + e).join("\n"),
+    );
+  }
+
   // ─── Internal ───
 
   private async _add(t: Target, content: string, signal?: AbortSignal, retries = 1): Promise<MemoryResult> {
