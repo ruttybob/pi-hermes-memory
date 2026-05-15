@@ -148,11 +148,11 @@ export class MemoryList {
   // ─── Input (синхронный — возвращает action или undefined) ───
 
   handleInput(data: string): MemoryAction | undefined {
-    if (matchesKey(data, Key.tab)) {
+    if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
       this.activeTab = (this.activeTab + 1) % this.tabs.length;
       this.sel = 0; this.refreshActiveTab(); return;
     }
-    if (matchesKey(data, Key.shift("tab"))) {
+    if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
       this.activeTab = (this.activeTab - 1 + this.tabs.length) % this.tabs.length;
       this.sel = 0; this.refreshActiveTab(); return;
     }
