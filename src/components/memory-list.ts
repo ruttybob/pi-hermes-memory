@@ -112,7 +112,7 @@ export class MemoryList {
         const d = decodeEntry(entries[ei]);
         const cur = fi === this.sel ? "> " : "  ";
         const raw = `${cur}${t.fg("dim", `[${d.created}]`)} ${fi === this.sel ? t.bold(d.text) : d.text}`;
-        lines.push(bc + "│ " + truncateToWidth(raw, innerW - PAD, "…") + " │");
+        lines.push(bc + "│ " + truncateToWidth(raw, innerW - 2, "…") + " │");
       }
       if (start > 0 || end < this.filtered.length) {
         lines.push(bc + "│" + this.pad(t.fg("dim", `  (${this.sel + 1}/${this.filtered.length})`), innerW) + "│");
