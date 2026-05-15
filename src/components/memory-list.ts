@@ -131,8 +131,8 @@ export class MemoryList {
       const text = `${label} (${count})`;
       parts.push(i === this.activeTab ? t.bold(t.fg("accent", text)) : t.fg("dim", text));
     }
-    const tabs = parts.join(t.fg("dim", " │ "));
-    const hint = t.fg("dim", "←→ tab · enter edit · ctrl+d del · esc close");
+    const tabs = parts.join(t.fg("dim", "  "));
+    const hint = t.fg("dim", "enter edit · ctrl+d del · esc close");
     return truncateToWidth(`${tabs}  ${hint}`, w, "");
   }
 
