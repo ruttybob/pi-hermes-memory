@@ -102,13 +102,14 @@ export default function (pi: ExtensionAPI) {
       const prompt = [REVIEW_PROMPT, "", "--- Current Memory ---", store.getMemoryEntries().join("\n§\n") || "(empty)", "",
         projectStore ? `--- Current Project Memory (${projectName}) ---\n${projectStore.getMemoryEntries().join("\n§\n") || "(empty)"}` : "",
         "--- Conversation to Review ---", parts.join("\n\n")].join("\n");
+      ctx.ui.notify("Scanning conversation...", "info");
       try {
         const r = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 120000 });
         if (r.code === 0 && r.stdout?.trim() && !r.stdout.toLowerCase().includes("nothing to save")) {
           await store.loadFromDisk(); if (projectStore) await projectStore.loadFromDisk();
-          ctx.ui.notify("Memory reviewed.", "info");
-        } else ctx.ui.notify("Nothing worth saving.", "info");
-      } catch { ctx.ui.notify("Review failed.", "info"); }
+          ctx.ui.notify("Memory scanned and updated.", "info");
+        } else ctx.ui.notify("Scan complete — nothing worth saving.", "info");
+      } catch { ctx.ui.notify("Scan failed.", "warning"); }
     },
   });
 }
