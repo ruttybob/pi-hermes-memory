@@ -46,7 +46,7 @@ export default function (pi: ExtensionAPI) {
   setupSessionFlush(pi, store, config);
   store.setConsolidator(async (t, s) => triggerConsolidation(pi, store, s));
   registerConsolidateCommand(pi, store);
-  setupCorrectionDetector(pi, store, config);
+  setupCorrectionDetector(pi, store, config, projectStore);
 
   // 7. /memory — TUI просмотр/редактирование (global + project)
   pi.registerCommand("memory", {

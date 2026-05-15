@@ -49,8 +49,7 @@ export class MemoryList {
 
     this.tabs.push({ label: "Memory", shortLabel: "Mem", store: o.store, target: "memory" });
     if (o.projectStore) this.tabs.push({ label: `Project: ${o.projectName}`, shortLabel: "Proj", store: o.projectStore, target: "memory" });
-    this.tabs.push({ label: "Failures", shortLabel: "Fail", store: o.store, target: "failure" });
-    if (o.projectStore) this.tabs.push({ label: `Proj. Failures`, shortLabel: "P.Fail", store: o.projectStore, target: "failure" });
+    this.tabs.push({ label: "Failures", shortLabel: "Fail", store: o.projectStore ?? o.store, target: "failure" });
 
     this.buildEntries();
   }

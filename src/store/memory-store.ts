@@ -125,6 +125,19 @@ export class MemoryStore {
     return parts.join("\n\n");
   }
 
+  formatMemoryBlock(): string {
+    return this.snapshot.memory ? this.fence(this.snapshot.memory) : "";
+  }
+
+  formatFailuresBlock(): string {
+    if (this.config.failureInjectionEnabled === false) return "";
+    const ma = this.config.failureInjectionMaxAgeDays ?? DEFAULT_FAILURE_INJECTION_MAX_AGE_DAYS;
+    const mx = this.config.failureInjectionMaxEntries ?? DEFAULT_FAILURE_INJECTION_MAX_ENTRIES;
+    const f = this.getFailureEntries(ma).slice(0, mx);
+    if (!f.length) return "";
+    return this.fence("RECENT FAILURES & LESSONS (learn from these):\n" + f.map((e) => "• " + e).join("\n"));
+  }
+
   formatProjectBlock(projectName: string): string {
     const entries = this.mem.map(strip);
     if (!entries.length) return "";

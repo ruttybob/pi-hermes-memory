@@ -31,7 +31,7 @@ export function isCorrection(text: string, cfg?: PCfg): boolean {
   return false;
 }
 
-export function setupCorrectionDetector(pi: ExtensionAPI, store: MemoryStore, config: MemoryConfig): void {
+export function setupCorrectionDetector(pi: ExtensionAPI, store: MemoryStore, config: MemoryConfig, projectStore: MemoryStore | null = null): void {
   if (!config.correctionDetection) return;
   let pending = false, turnsSince = 3, busy = false;
 
@@ -53,7 +53,7 @@ export function setupCorrectionDetector(pi: ExtensionAPI, store: MemoryStore, co
       const result = await pi.exec("pi", ["-p", "--no-session", prompt], { signal: ctx.signal, timeout: 30000 });
       if (result.code === 0 && result.stdout?.trim() && !result.stdout.toLowerCase().includes("nothing to save"))
         ctx.ui.notify("🔧 Correction detected — memory updated", "info");
-      try { const u = recent.find((p) => p.startsWith("[USER]")); if (u) await store.addFailure(extractDirective(u.replace(/^\[USER\]:\s*/, "")), { category: "correction", failureReason: "User corrected the agent" }); } catch { /* */ }
+      try { const u = recent.find((p) => p.startsWith("[USER]")); if (u) await (projectStore ?? store).addFailure(extractDirective(u.replace(/^\[USER\]:\s*/, "")), { category: "correction", failureReason: "User corrected the agent" }); } catch { /* */ }
     } catch { /* */ } finally { busy = false; }
   });
 }
